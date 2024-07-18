@@ -1,64 +1,78 @@
-{{- $clusterName       := .Data.ClusterData.ClusterName}}
-{{- $clusterHash       := .Data.ClusterData.ClusterHash}}
-{{- $uniqueFingerPrint := .Fingerprint }}
+{{- $clusterName           := .Data.ClusterData.ClusterName}}
+{{- $clusterHash           := .Data.ClusterData.ClusterHash}}
+{{- $uniqueFingerPrint     := .Fingerprint }}
+{{- $isKubernetesCluster   := eq .Data.ClusterData.ClusterType "K8s" }}
+{{- $isLoadbalancerCluster := eq .Data.ClusterData.ClusterType "LB" }}
+
 
 {{- range $_, $nodepool := .Data.NodePools }}
 
-{{- $region   := $nodepool.NodePool.Region }}
-{{- $specName := $nodepool.NodePool.Provider.SpecName }}
+{{- $region         := $nodepool.NodePool.Region }}
+{{- $specName       := $nodepool.NodePool.Provider.SpecName }}
+{{- $resourceSuffix := printf "%s_%s_%s" $region $specName $uniqueFingerPrint }}
 
-{{- range $node := $nodepool.Nodes }}
-resource "google_compute_instance" "{{ $node.Name }}_{{ $region }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
-  provider                  = google.nodepool_{{ $region }}_{{ $specName }}_{{ $uniqueFingerPrint }}
-  zone                      = "{{ $nodepool.NodePool.Zone }}"
-  name                      = "{{ $node.Name }}"
-  machine_type              = "{{ $nodepool.NodePool.ServerType }}"
-  description   = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
-  allow_stopping_for_update = true
+    {{- range $node := $nodepool.Nodes }}
 
-  network_interface {
-    subnetwork = google_compute_subnetwork.{{ $nodepool.Name }}_{{ $region }}_{{ $specName }}_{{ $uniqueFingerPrint }}_subnet.self_link
-    access_config {}
-  }
+        {{- $computeInstanceResourceName  := printf "%s_%s" $node.Name $resourceSuffix }}
+        {{- $computeInstanceName          := printf "snt-%s-%s-%s" $clusterHash $region $nodepool.Name }}
+        {{- $computeSubnetResourceName    := printf "%s_%s_subnet" $nodepool.Name $resourceSuffix }}
+        {{- $varStorageDiskName           := printf "gcp_storage_disk_name_%s" $resourceSuffix }}
+        {{- $isWorkerNodeWithDiskAttached := and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
 
-  metadata = {
-    ssh-keys = "root:${file("./{{ $nodepool.Name }}")}"
-  }
+        resource "google_compute_instance" "{{ $computeInstanceResourceName}}" {
+          provider                  = google.nodepool_{{ $resourceSuffix }}
+          zone                      = "{{ $nodepool.NodePool.Zone }}"
+          name                      = "{{ $node.Name }}"
+          machine_type              = "{{ $nodepool.NodePool.ServerType }}"
+          description   = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
+          allow_stopping_for_update = true
 
-  labels = {
-    managed-by = "claudie"
-    claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
-  }
+          network_interface {
+            subnetwork = google_compute_subnetwork.{{ $computeSubnetResourceName }}.self_link
+            access_config {}
+          }
 
-{{- if eq $.Data.ClusterData.ClusterType "LB" }}
-  boot_disk {
-    initialize_params {
-      size = "50"
-      image = "{{ $nodepool.NodePool.Image }}"
-    }
-  }
-  metadata_startup_script = "echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart"
-{{- end }}
+          metadata = {
+            ssh-keys = "root:${file("./{{ $nodepool.Name }}")}"
+          }
 
-{{- if eq $.Data.ClusterData.ClusterType "K8s" }}
-  boot_disk {
-    initialize_params {
-      size = "100"
-      image = "{{ $nodepool.NodePool.Image }}"
-    }
-  }
+          labels = {
+            managed-by = "claudie"
+            claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
+          }
 
-  metadata_startup_script = <<EOF
-  #!/bin/bash
-  set -euxo pipefail
+        {{- if $isLoadbalancerCluster }}
+            boot_disk {
+              initialize_params {
+                size = "50"
+                image = "{{ $nodepool.NodePool.Image }}"
+              }
+            }
+            metadata_startup_script = "echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart"
+        {{- end }}
+
+        {{- if $isKubernetesCluster }}
+            boot_disk {
+              initialize_params {
+                size = "100"
+                image = "{{ $nodepool.NodePool.Image }}"
+              }
+            }
+
+            metadata_startup_script = <<EOF
+#!/bin/bash
+set -euxo pipefail
 # Allow ssh as root
-echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart  
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart
 # Create longhorn volume directory
 mkdir -p /opt/claudie/data
-    {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
+
+            {{- /* Only Mount disk for Worker nodes that have a non-zero requested disk size */}}
+            {{- if $isWorkerNodeWithDiskAttached }}
+
 # Mount managed disk only when not mounted yet
 sleep 50
-disk=$(ls -l /dev/disk/by-id | grep "google-${var.gcp_storage_disk_name_{{ $region }}_{{ $specName }}_{{ $uniqueFingerPrint }}}" | awk '{print $NF}')
+disk=$(ls -l /dev/disk/by-id | grep "google-${var.{{ $varStorageDiskName }}}" | awk '{print $NF}')
 disk=$(basename "$disk")
 if ! grep -qs "/dev/$disk" /proc/mounts; then
   if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
@@ -67,53 +81,60 @@ if ! grep -qs "/dev/$disk" /proc/mounts; then
   mount /dev/$disk /opt/claudie/data
   echo "/dev/$disk /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
 fi
-    {{- end }}
+
+            {{- end }}
 EOF
 
-  {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
-  # As the storage disk is attached via google_compute_attached_disk,
-  # we must ignore attached_disk property.
-  lifecycle {
-    ignore_changes = [attached_disk]
-  }
-  {{- end }}
+           {{- if $isWorkerNodeWithDiskAttached }}
+               # As the storage disk is attached via google_compute_attached_disk,
+               # we must ignore attached_disk property.
+               lifecycle {
+                 ignore_changes = [attached_disk]
+               }
+           {{- end }}
+        {{- end }}
+        }
 
-{{- end }}
-}
+        {{- if $isKubernetesCluster }}
+            {{- if $isWorkerNodeWithDiskAttached }}
 
-{{- if eq $.Data.ClusterData.ClusterType "K8s" }}
-    {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
-resource "google_compute_disk" "{{ $node.Name }}_{{ $region }}_{{ $specName }}_{{ $uniqueFingerPrint }}_disk" {
-  provider = google.nodepool_{{ $region }}_{{ $specName }}_{{ $uniqueFingerPrint }}
-  # suffix 'd' as otherwise the creation of the VM instance and attachment of the disk will fail, if having the same name as the node.
-  name     = "{{ $node.Name }}d"
-  type     = "pd-ssd"
-  zone     = "{{ $nodepool.NodePool.Zone }}"
-  size     = {{ $nodepool.NodePool.StorageDiskSize }}
+            {{- $computeDiskResourceName          := printf "%s_%s_disk" $node.Name $resourceSuffix }}
+            {{- $computeDiskName                  := printf "%sd" $node.Name }}
+            {{- $computeAttachedDiskResourceName  := printf "%s_%s_disk_att" $node.Name $resourceSuffix }}
 
-  labels = {
-    managed-by = "claudie"
-    claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
-  }
-}
+            resource "google_compute_disk" "{{ $computeDiskResourceName }}" {
+              provider = google.nodepool_{{ $resourceSuffix }}
+              # suffix 'd' as otherwise the creation of the VM instance and attachment of the disk will fail, if having the same name as the node.
+              name     = "{{ $computeDiskName }}"
+              type     = "pd-ssd"
+              zone     = "{{ $nodepool.NodePool.Zone }}"
+              size     = {{ $nodepool.NodePool.StorageDiskSize }}
 
-resource "google_compute_attached_disk" "{{ $node.Name }}_{{ $region }}_{{ $specName }}_{{ $uniqueFingerPrint }}_disk_att" {
-  provider    = google.nodepool_{{ $region }}_{{ $specName }}_{{ $uniqueFingerPrint }}
-  disk        = google_compute_disk.{{ $node.Name }}_{{ $region }}_{{ $specName }}_{{ $uniqueFingerPrint }}_disk.id
-  instance    = google_compute_instance.{{ $node.Name }}_{{ $region}}_{{ $specName }}_{{ $uniqueFingerPrint }}.id
-  zone        = "{{ $nodepool.NodePool.Zone }}"
-  device_name = var.gcp_storage_disk_name_{{ $region }}_{{ $specName }}_{{ $uniqueFingerPrint }}
-}
+              labels = {
+                managed-by = "claudie"
+                claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
+              }
+            }
+
+            resource "google_compute_attached_disk" "{{ $computeAttachedDiskResourceName }}" {
+              provider    = google.nodepool_{{ $resourceSuffix }}
+              disk        = google_compute_disk.{{ $computeDiskResourceName }}.id
+              instance    = google_compute_instance.{{ $computeInstanceResourceName }}.id
+              zone        = "{{ $nodepool.NodePool.Zone }}"
+              device_name = var.{{ $varStorageDiskName }}
+            }
+            {{- end }}
+        {{- end }}
     {{- end }}
-{{- end }}
 
-{{- end }}
+    output "{{ $nodepool.Name }}_{{ $uniqueFingerPrint }}" {
+      value = {
+      {{- range $node := $nodepool.Nodes }}
+        {{- $computeInstanceResourceName  := printf "%s_%s" $node.Name $resourceSuffix }}
 
-output "{{ $nodepool.Name }}_{{ $uniqueFingerPrint }}" {
-  value = {
-  {{- range $node := $nodepool.Nodes }}
-    "${google_compute_instance.{{ $node.Name }}_{{ $region}}_{{ $specName }}_{{ $uniqueFingerPrint }}.name}" = google_compute_instance.{{ $node.Name }}_{{ $region }}_{{ $specName }}_{{ $uniqueFingerPrint }}.network_interface.0.access_config.0.nat_ip
-  {{- end }}
-  }
-}
+        "${google_compute_instance.{{ $computeInstanceResourceName }}.name}" = google_compute_instance.{{ $computeInstanceResourceName }}.network_interface.0.access_config.0.nat_ip
+
+      {{- end }}
+      }
+    }
 {{- end }}

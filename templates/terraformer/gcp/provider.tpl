@@ -3,10 +3,13 @@
 {{- $uniqueFingerPrint := .Fingerprint }}
 
 {{- range $_, $region := .Data.Regions}}
+
+{{- $resourceSuffix := printf "%s_%s_%s" $region $specName $uniqueFingerPrint }}
+
 provider "google" {
-  credentials = "${file("{{ specName }}")}"
-  project     = "{{ gcpProject }}"
+  credentials = "${file("{{ $specName }}")}"
+  project     = "{{ $gcpProject }}"
   region      = "{{ $region }}"
-  alias       = "nodepool_{{ $region }}_{{ $specName }}_{{ $uniqueFingerPrint }}"
+  alias       = "nodepool_{{ $resourceSuffix }}"
 }
 {{- end}}

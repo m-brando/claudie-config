@@ -1,4 +1,8 @@
+{{- $specName          := .Data.Provider.SpecName }}
+{{- $uniqueFingerPrint := .Fingerprint }}
+{{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
+
 provider "hcloud" {
-  token = "{{ $.Provider.Credentials }}"
-  alias = "nodepool_{{ $.Provider.SpecName }}"
+  token = "${file("{{ $specName }}")}"
+  alias = "nodepool_{{ $resourceSuffix }}"
 }

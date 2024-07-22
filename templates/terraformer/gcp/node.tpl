@@ -7,8 +7,8 @@
 
 {{- range $_, $nodepool := .Data.NodePools }}
 
-{{- $region         := $nodepool.NodePool.Region }}
-{{- $specName       := $nodepool.NodePool.Provider.SpecName }}
+{{- $region         := $nodepool.Details.Region }}
+{{- $specName       := $nodepool.Details.Provider.SpecName }}
 {{- $resourceSuffix := printf "%s_%s_%s" $region $specName $uniqueFingerPrint }}
 
     {{- range $node := $nodepool.Nodes }}
@@ -17,13 +17,13 @@
         {{- $computeInstanceName          := printf "snt-%s-%s-%s" $clusterHash $region $nodepool.Name }}
         {{- $computeSubnetResourceName    := printf "%s_%s_subnet" $nodepool.Name $resourceSuffix }}
         {{- $varStorageDiskName           := printf "gcp_storage_disk_name_%s" $resourceSuffix }}
-        {{- $isWorkerNodeWithDiskAttached := and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
+        {{- $isWorkerNodeWithDiskAttached := and (not $nodepool.IsControl) (gt $nodepool.Details.StorageDiskSize 0) }}
 
         resource "google_compute_instance" "{{ $computeInstanceResourceName}}" {
           provider                  = google.nodepool_{{ $resourceSuffix }}
-          zone                      = "{{ $nodepool.NodePool.Zone }}"
+          zone                      = "{{ $nodepool.Details.Zone }}"
           name                      = "{{ $node.Name }}"
-          machine_type              = "{{ $nodepool.NodePool.ServerType }}"
+          machine_type              = "{{ $nodepool.Details.ServerType }}"
           description   = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
           allow_stopping_for_update = true
 
@@ -45,7 +45,7 @@
             boot_disk {
               initialize_params {
                 size = "50"
-                image = "{{ $nodepool.NodePool.Image }}"
+                image = "{{ $nodepool.Details.Image }}"
               }
             }
             metadata_startup_script = "echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart"
@@ -55,7 +55,7 @@
             boot_disk {
               initialize_params {
                 size = "100"
-                image = "{{ $nodepool.NodePool.Image }}"
+                image = "{{ $nodepool.Details.Image }}"
               }
             }
 
@@ -107,8 +107,8 @@ EOF
               # suffix 'd' as otherwise the creation of the VM instance and attachment of the disk will fail, if having the same name as the node.
               name     = "{{ $computeDiskName }}"
               type     = "pd-ssd"
-              zone     = "{{ $nodepool.NodePool.Zone }}"
-              size     = {{ $nodepool.NodePool.StorageDiskSize }}
+              zone     = "{{ $nodepool.Details.Zone }}"
+              size     = {{ $nodepool.Details.StorageDiskSize }}
 
               labels = {
                 managed-by = "claudie"
@@ -120,7 +120,7 @@ EOF
               provider    = google.nodepool_{{ $resourceSuffix }}
               disk        = google_compute_disk.{{ $computeDiskResourceName }}.id
               instance    = google_compute_instance.{{ $computeInstanceResourceName }}.id
-              zone        = "{{ $nodepool.NodePool.Zone }}"
+              zone        = "{{ $nodepool.Details.Zone }}"
               device_name = var.{{ $varStorageDiskName }}
             }
             {{- end }}

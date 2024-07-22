@@ -1,30 +1,35 @@
+{{- $specName          := .Data.Provider.SpecName }}
+{{- $gcpProject        := .Data.Provider.GcpProject }}
+{{- $uniqueFingerPrint := .Fingerprint }}
+{{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
+
 provider "google" {
-    credentials = "${file("{{ .Provider.SpecName }}")}"
-    project     = "{{ .Provider.GcpProject }}"
-    alias       = "dns_gcp"
+    credentials = "${file("{{ $specName }}")}"
+    project     = "{{ $gcpProject }}"
+    alias       = "dns_gcp_{{ $resourceSuffix }}"
 }
 
-data "google_dns_managed_zone" "gcp_zone" {
-  provider  = google.dns_gcp
-  name      = "{{ .DNSZone }}"
+data "google_dns_managed_zone" "gcp_zone_{{ $resourceSuffix }}" {
+  provider  = google.dns_gcp_{{ $resourceSuffix }}
+  name      = "{{ .Data.DNSZone }}"
 }
 
-resource "google_dns_record_set" "record" {
-  provider = google.dns_gcp
+resource "google_dns_record_set" "record_{{ $resourceSuffix }}" {
+  provider = google.dns_gcp_{{ $resourceSuffix }}
 
-  name = "{{ .HostnameHash }}.${data.google_dns_managed_zone.gcp_zone.dns_name}"
+  name = "{{ .Data.HostnameHash }}.${data.google_dns_managed_zone.gcp_zone_{{ $resourceSuffix }}.dns_name}"
   type = "A"
   ttl  = 300
 
-  managed_zone = data.google_dns_managed_zone.gcp_zone.name
+  managed_zone = data.google_dns_managed_zone.gcp_zone_{{ $resourceSuffix }}.name
 
   rrdatas = [
-      {{- range $IP := .NodeIPs }}
-      "{{ $IP }}",
+      {{- range $ip := .Data.RecordData.IP }}
+          "{{ $ip.V4 }}",
       {{- end }}
     ]
 }
 
-output "{{.ClusterName}}-{{.ClusterHash}}" {
-  value = { "{{.ClusterName}}-{{.ClusterHash}}-endpoint" = google_dns_record_set.record.name }
+output "{{.Data.ClusterName}}-{{.Data.ClusterHash}}-{{ $uniqueFingerPrint }}" {
+  value = { "{{.Data.ClusterName}}-{{.Data.ClusterHash}}-endpoint" = google_dns_record_set.record_{{ $resourceSuffix }}.name }
 }

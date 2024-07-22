@@ -1,88 +1,113 @@
-{{- $clusterName := .ClusterData.ClusterName }}
-{{- $clusterHash := .ClusterData.ClusterHash }}
+{{- $clusterName           := .Data.ClusterData.ClusterName}}
+{{- $clusterHash           := .Data.ClusterData.ClusterHash}}
+{{- $uniqueFingerPrint     := .Fingerprint }}
+{{- $isKubernetesCluster   := eq .Data.ClusterData.ClusterType "K8s" }}
+{{- $isLoadbalancerCluster := eq .Data.ClusterData.ClusterType "LB" }}
+
 
 {{- range $nodepool := .NodePools }}
 
-{{- $specName := $nodepool.NodePool.Provider.SpecName }}
+{{- $specName       := $nodepool.Details.Provider.SpecName }}
+{{- $resourceSuffix := printf "%s_%s" $specName $uniqueFingerPrint }}
 
-resource "hcloud_ssh_key" "{{ $nodepool.Name }}_key_{{ $specName }}" {
-  provider   = hcloud.nodepool_{{ $specName }}
-  name       = "{{ $nodepool.Name }}-key-{{ $clusterHash }}-{{ $specName }}"
-  public_key = file("./{{ $nodepool.Name }}")
+{{- $sshKeyResourceName := printf "key_%s_%s" $nodepool.Name $resourceSuffix }}
+{{- $sshKeyName         := printf "key-%s-%s-%s" $nodepool.Name $clusterHash $specName }}
 
-  labels = {
-    "managed-by"      : "Claudie"
-    "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
-  }
-}
+    resource "hcloud_ssh_key" "{{ $sshKeyResourceName }}" {
+      provider   = hcloud.nodepool_{{ $specName }}
+      name       = "{{ $sshKeyName }}"
+      public_key = file("./{{ $nodepool.Name }}")
 
-{{- range $node := $nodepool.Nodes }}
-resource "hcloud_server" "{{ $node.Name }}_{{ $specName }}" {
-  provider      = hcloud.nodepool_{{ $specName }}
-  name          = "{{ $node.Name }}"
-  server_type   = "{{ $nodepool.NodePool.ServerType }}"
-  image         = "{{ $nodepool.NodePool.Image }}"
-  firewall_ids  = [hcloud_firewall.firewall_{{ $specName }}.id]
-  datacenter    = "{{ $nodepool.NodePool.Zone }}"
-  public_net {
-     ipv6_enabled = false
-  }
-  ssh_keys = [
-    hcloud_ssh_key.{{ $nodepool.Name }}_key_{{ $specName }}.id,
-  ]
-  labels = {
-    "managed-by"      : "Claudie"
-    "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
-  }
+      labels = {
+        "managed-by"      : "Claudie"
+        "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
+      }
+    }
 
-{{- if eq $.ClusterData.ClusterType "K8s" }}
-  user_data = <<EOF
+    {{- range $node := $nodepool.Nodes }}
+
+        {{- $serverResourceName           := printf "%s_%s" $node.Name $resourceSuffix }}
+        {{- $firewallResourceName         := printf "firewall_%s" $resourceSuffix }}
+        {{- $isWorkerNodeWithDiskAttached := and (not $nodepool.IsControl) (gt $nodepool.Details.StorageDiskSize 0) }}
+        {{- $volumeResourceName           := printf "%s_%s_volume" %node.Name $resourceSuffix }}
+
+        resource "hcloud_server" "{{ $serverResourceName }}" {
+          provider      = hcloud.nodepool_{{ $resourceSuffix }}
+          name          = "{{ $node.Name }}"
+          server_type   = "{{ $nodepool.NodePool.ServerType }}"
+          image         = "{{ $nodepool.NodePool.Image }}"
+          firewall_ids  = [ hcloud_firewall.{{ $firewallResourceName }}.id ]
+          datacenter    = "{{ $nodepool.NodePool.Zone }}"
+          public_net {
+             ipv6_enabled = false
+          }
+          ssh_keys = [
+            hcloud_ssh_key.{{ $sshKeyResourceName }}.id,
+          ]
+          labels = {
+            "managed-by"      : "Claudie"
+            "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
+          }
+
+        {{- if $isKubernetesCluster }}
+          user_data = <<EOF
 #!/bin/bash
 # Create longhorn volume directory
 mkdir -p /opt/claudie/data
-    {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
+
+            {{- /* Only Mount disk for Worker nodes that have a non-zero requested disk size */}}
+            {{- if $isWorkerNodeWithDiskAttached }}
+
 # Mount volume only when not mounted yet
 sleep 50
-disk=$(ls -l /dev/disk/by-id | grep "${hcloud_volume.{{ $node.Name }}_{{ $specName }}_volume.id}" | awk '{print $NF}')
+disk=$(ls -l /dev/disk/by-id | grep "${hcloud_volume.{{ $volumeResourceName }}.id}" | awk '{print $NF}')
 disk=$(basename "$disk")
 if ! grep -qs "/dev/$disk" /proc/mounts; then
-  
+
   if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
     mkfs.xfs /dev/$disk
   fi
   mount /dev/$disk /opt/claudie/data
   echo "/dev/$disk /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
 fi
-    {{- end }}
+
+            {{- end }}
 EOF
-{{- end }}
-}
 
-{{- if eq $.ClusterData.ClusterType "K8s" }}
-    {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
-resource "hcloud_volume" "{{ $node.Name }}_{{ $specName }}_volume" {
-  provider  = hcloud.nodepool_{{ $specName }}
-  name      = "{{ $node.Name }}d"
-  size      = {{ $nodepool.NodePool.StorageDiskSize }}
-  format    = "xfs"
-  location = "{{ $nodepool.NodePool.Region }}"
-}
+        {{- end }}
+        }
 
-resource "hcloud_volume_attachment" "{{ $node.Name }}_{{ $specName }}_volume_att" {
-  provider  = hcloud.nodepool_{{ $specName }}
-  volume_id = hcloud_volume.{{ $node.Name }}_{{ $specName }}_volume.id
-  server_id = hcloud_server.{{ $node.Name }}_{{ $specName }}.id
-  automount = false
-}
+        {{- if $isKubernetesCluster }}
+            {{- if $isWorkerNodeWithDiskAttached }}
+
+            {{- $volumeName                   := printf "%sd" $node.Name }}
+            {{- $volumeAttachmentResourceName := printf "%s_att" $volumeResourceName }}
+
+            resource "hcloud_volume" "{{ $volumeResourceName }}" {
+              provider  = hcloud.nodepool_{{ $resourceSuffix }}
+              name      = "{{ $volumeName }}"
+              size      = {{ $nodepool.NodePool.StorageDiskSize }}
+              format    = "xfs"
+              location = "{{ $nodepool.NodePool.Region }}"
+            }
+
+            resource "hcloud_volume_attachment" "{{ $volumeResourceName }}_att" {
+              provider  = hcloud.nodepool_{{ $resourceSuffix }}
+              volume_id = hcloud_volume.{{ $volumeResourceName }}.id
+              server_id = hcloud_server.{{ $serverResourceName }}.id
+              automount = false
+            }
+
+            {{- end }}
+        {{- end }}
+
     {{- end }}
-{{- end }}
 
-{{- end }}
-
-output "{{ $nodepool.Name }}" {
+output "{{ $nodepool.Name }}_{{ $uniqueFingerPrint }}" {
   value = {
     {{- range $node := $nodepool.Nodes }}
-    "${hcloud_server.{{ $node.Name }}_{{ $specName }}.name}" = hcloud_server.{{ $node.Name }}_{{ $specName }}.ipv4_address
+        {{- $serverResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
+        "${hcloud_server.{{ $serverResourceName }}}" = hcloud_server.{{ $serverResourceName }}.ipv4_address
     {{- end }}
   }
 }

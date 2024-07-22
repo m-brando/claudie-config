@@ -1,11 +1,19 @@
-{{- $clusterName := .ClusterData.ClusterName }}
-{{- $clusterHash := .ClusterData.ClusterHash }}
+{{- $clusterName           := .Data.ClusterData.ClusterName}}
+{{- $clusterHash           := .Data.ClusterData.ClusterHash}}
+{{- $specName              := .Data.Provider.SpecName }}
+{{- $uniqueFingerPrint     := .Fingerprint }}
+{{- $isKubernetesCluster   := eq .Data.ClusterData.ClusterType "K8s" }}
+{{- $isLoadbalancerCluster := eq .Data.ClusterData.ClusterType "LB" }}
+{{- $LoadBalancerRoles     := .Data.LBData.Roles }}
+{{- $K8sHasAPIServer       := .Data.K8sData.HasAPIServer }}
+{{- $resourceSuffix        := printf "%s_%s" $specName $uniqueFingerPrint }}
 
-{{- $specName := $.Provider.SpecName }}
+{{- $firewallResourceName  := printf "firewall_%s" $resourceSuffix }}
+{{- $firewallName  := printf "fwl-%s-%s" $clusterHash $specName }}
 
-resource "hcloud_firewall" "firewall_{{ $specName }}" {
-  provider = hcloud.nodepool_{{ $specName }}
-  name     = "fwl-{{ $clusterHash }}-{{ $specName }}"
+resource "hcloud_firewall" "{{ $firewallResourceName }}" {
+  provider = hcloud.nodepool_{{ $resourceSuffix }}
+  name     = "{{ $firewallName }}"
   rule {
     direction  = "in"
     protocol   = "icmp"
@@ -35,8 +43,8 @@ resource "hcloud_firewall" "firewall_{{ $specName }}" {
     ]
   }
 
-{{- if eq $.ClusterData.ClusterType "LB" }}
-  {{- range $role := index $.Metadata "roles" }}
+{{- if $isLoadbalancerCluster }}
+  {{- range $role := $LoadBalancerRoles }}
   rule {
     direction  = "in"
     protocol   = "{{ $role.Protocol }}"
@@ -49,8 +57,8 @@ resource "hcloud_firewall" "firewall_{{ $specName }}" {
   {{- end }}
 {{- end }}
 
-{{- if eq $.ClusterData.ClusterType "K8s" }}
-  {{- if index $.Metadata "loadBalancers" | targetPorts | isMissing 6443 }}
+{{- if $isKubernetesCluster }}
+  {{- if $K8sHasAPIServer }}
   rule {
     direction  = "in"
     protocol   = "tcp"

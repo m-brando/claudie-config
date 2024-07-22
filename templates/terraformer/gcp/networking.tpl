@@ -4,6 +4,8 @@
 {{- $uniqueFingerPrint     := .Fingerprint }}
 {{- $isKubernetesCluster   := eq .Data.ClusterData.ClusterType "K8s" }}
 {{- $isLoadbalancerCluster := eq .Data.ClusterData.ClusterType "LB" }}
+{{- $LoadBalancerRoles     := .Data.LBData.Roles }}
+{{- $K8sHasAPIServer       := .Data.K8sData.HasAPIServer }}
 
 {{- range $_, $region := .Data.Regions}}
 
@@ -29,8 +31,7 @@ resource "google_compute_network" "{{ $computeNetworkResourceName }}" {
 
 {{- $computeFirewallResourceName     := printf "firewall_%s"  $resourceSuffix }}
 {{- $computeFirewallName             := printf "fwl-%s-%s-%s" $clusterHash $region $specName}}
-{{- $LoadBalancerRoles               := index $.Data.Metadata "roles" }}
-{{- $LoadBalancerHasNotApiServerRole := index $.Data.Metadata "loadBalancers" | targetPorts | isMissing 6443 }}
+
 
 resource "google_compute_firewall" "{{ $computeFirewallResourceName }}" {
   provider     = google.nodepool_{{ $resourceSuffix }}
@@ -48,7 +49,7 @@ resource "google_compute_firewall" "{{ $computeFirewallResourceName }}" {
 {{- end }}
 
 {{- if $isKubernetesCluster }}
-  {{- if $LoadBalancerHasNotApiServerRole }}
+  {{- if $K8sHasAPIServer }}
   allow {
       protocol = "TCP"
       ports    = ["6443"]

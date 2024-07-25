@@ -5,7 +5,7 @@
 {{- $isLoadbalancerCluster := eq .Data.ClusterData.ClusterType "LB" }}
 
 
-{{- range $nodepool := .NodePools }}
+{{- range $nodepool := .Data.NodePools }}
 
 {{- $specName       := $nodepool.Details.Provider.SpecName }}
 {{- $resourceSuffix := printf "%s_%s" $specName $uniqueFingerPrint }}
@@ -14,7 +14,7 @@
 {{- $sshKeyName         := printf "key-%s-%s-%s" $nodepool.Name $clusterHash $specName }}
 
     resource "hcloud_ssh_key" "{{ $sshKeyResourceName }}" {
-      provider   = hcloud.nodepool_{{ $specName }}
+      provider   = hcloud.nodepool_{{ $resourceSuffix }}
       name       = "{{ $sshKeyName }}"
       public_key = file("./{{ $nodepool.Name }}")
 
@@ -29,15 +29,15 @@
         {{- $serverResourceName           := printf "%s_%s" $node.Name $resourceSuffix }}
         {{- $firewallResourceName         := printf "firewall_%s" $resourceSuffix }}
         {{- $isWorkerNodeWithDiskAttached := and (not $nodepool.IsControl) (gt $nodepool.Details.StorageDiskSize 0) }}
-        {{- $volumeResourceName           := printf "%s_%s_volume" %node.Name $resourceSuffix }}
+        {{- $volumeResourceName           := printf "%s_%s_volume" $node.Name $resourceSuffix }}
 
         resource "hcloud_server" "{{ $serverResourceName }}" {
           provider      = hcloud.nodepool_{{ $resourceSuffix }}
           name          = "{{ $node.Name }}"
-          server_type   = "{{ $nodepool.NodePool.ServerType }}"
-          image         = "{{ $nodepool.NodePool.Image }}"
+          server_type   = "{{ $nodepool.Details.ServerType }}"
+          image         = "{{ $nodepool.Details.Image }}"
           firewall_ids  = [ hcloud_firewall.{{ $firewallResourceName }}.id ]
-          datacenter    = "{{ $nodepool.NodePool.Zone }}"
+          datacenter    = "{{ $nodepool.Details.Zone }}"
           public_net {
              ipv6_enabled = false
           }
@@ -86,9 +86,9 @@ EOF
             resource "hcloud_volume" "{{ $volumeResourceName }}" {
               provider  = hcloud.nodepool_{{ $resourceSuffix }}
               name      = "{{ $volumeName }}"
-              size      = {{ $nodepool.NodePool.StorageDiskSize }}
+              size      = {{ $nodepool.Details.StorageDiskSize }}
               format    = "xfs"
-              location = "{{ $nodepool.NodePool.Region }}"
+              location = "{{ $nodepool.Details.Region }}"
             }
 
             resource "hcloud_volume_attachment" "{{ $volumeResourceName }}_att" {
@@ -107,7 +107,7 @@ output "{{ $nodepool.Name }}_{{ $uniqueFingerPrint }}" {
   value = {
     {{- range $node := $nodepool.Nodes }}
         {{- $serverResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
-        "${hcloud_server.{{ $serverResourceName }}}" = hcloud_server.{{ $serverResourceName }}.ipv4_address
+        "${hcloud_server.{{ $serverResourceName }}.name}" = hcloud_server.{{ $serverResourceName }}.ipv4_address
     {{- end }}
   }
 }

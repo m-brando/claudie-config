@@ -29,6 +29,6 @@ resource "azurerm_dns_a_record" "record_{{ $resourceSuffix }}" {
   ]
 }
 
-output "{{ .Data.ClusterName }}-{{ .Data.ClusterHash }}-{{ $uniqueFingerPrint }}" {
+output "{{ .Data.ClusterName }}_{{ .Data.ClusterHash }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
     value = { "{{ .Data.ClusterName }}-{{.Data.ClusterHash }}-endpoint" = format("%s.%s", azurerm_dns_a_record.record_{{ $resourceSuffix }}.name, azurerm_dns_a_record.record_{{ $resourceSuffix }}.zone_name)}
 }

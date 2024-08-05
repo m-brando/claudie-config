@@ -8,7 +8,7 @@
 {{- $K8sHasAPIServer       := .Data.K8sData.HasAPIServer }}
 
 locals {
-  protocol_to_number_{{ $uniqueFingerPrint }} = {
+  protocol_to_number_{{ $specName }}_{{ $uniqueFingerPrint }} = {
     "tcp"    = 6
     "udp"    = 17
     "icmp"   = 1
@@ -112,7 +112,7 @@ resource "oci_core_default_security_list" "{{ $coreSecurityListResourceName }}" 
 {{- if $isLoadbalancerCluster }}
   {{- range $role := $LoadBalancerRoles }}
   ingress_security_rules {
-    protocol  = lookup(local.protocol_to_number_{{ $uniqueFingerPrint }}, lower("{{ $role.Protocol }}"), -1)
+    protocol  = lookup(local.protocol_to_number_{{ $specName }}_{{ $uniqueFingerPrint }}, lower("{{ $role.Protocol }}"), -1)
     source    = "0.0.0.0/0"
     tcp_options {
       max = "{{ $role.Port }}"

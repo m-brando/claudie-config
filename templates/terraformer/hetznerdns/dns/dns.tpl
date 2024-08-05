@@ -28,6 +28,6 @@ data "hetznerdns_zone" "hetzner_zone_{{ $resourceSuffix }}" {
 
 {{- end }}
 
-output "{{ .Data.ClusterName }}-{{ .Data.ClusterHash }}-{{ $uniqueFingerPrint }}" {
+output "{{ .Data.ClusterName }}_{{ .Data.ClusterHash }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
   value = { "{{ .Data.ClusterName }}-{{ .Data.ClusterHash }}-endpoint" = format("%s.%s", "{{ .Data.HostnameHash }}", "{{ .Data.DNSZone }}")}
 }

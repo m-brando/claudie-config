@@ -6,7 +6,7 @@ locals {
   # Accelerated networking can be enabled based on conditions 
   # specified here https://azure.microsoft.com/en-us/updates/accelerated-networking-in-expanded-preview/
   # we will look only at VM sizes, since all regions are supported now all reasonable operating systems
-  vm_sizes_patterns_{{ $uniqueFingerPrint }} = [
+  vm_sizes_patterns_{{ $specName }}_{{ $uniqueFingerPrint }} = [
     "D3.*?v3.*",
     "DS3.*?v2.*",
     "DS?4.*?v2.*",
@@ -29,7 +29,7 @@ locals {
     "E64s?.*",
   ]
 
-  combined_pattern_{{ $uniqueFingerPrint }} = join("|", local.vm_sizes_patterns_{{ $uniqueFingerPrint }})
+  combined_pattern_{{ $specName }}_{{ $uniqueFingerPrint }} = join("|", local.vm_sizes_patterns_{{ $specName }}_{{ $uniqueFingerPrint }})
 }
 
 
@@ -90,7 +90,7 @@ resource "azurerm_subnet_network_security_group_association" "{{ $subnetNetworkS
           name                = "{{ $networkInterfaceName }}"
           location            = "{{ $nodepool.Details.Region }}"
           resource_group_name = azurerm_resource_group.{{ $resourceGroupResourceName }}.name
-          enable_accelerated_networking = length(regexall(local.combined_pattern_{{ $uniqueFingerPrint }}, "{{ $nodepool.Details.ServerType }}")) > 0 ? "true" : "false"
+          enable_accelerated_networking = length(regexall(local.combined_pattern_{{ $specName }}_{{ $uniqueFingerPrint }}, "{{ $nodepool.Details.ServerType }}")) > 0 ? "true" : "false"
 
           ip_configuration {
             name                          = "ip-cfg-{{ $node.Name }}"

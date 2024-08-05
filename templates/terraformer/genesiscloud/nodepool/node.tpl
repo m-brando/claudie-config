@@ -111,7 +111,7 @@ EOF
         }
     {{- end }}
 
-output "{{ $nodepool.Name }}_{{ $uniqueFingerPrint }}" {
+output "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
   value = {
     {{- range $node := $nodepool.Nodes }}
         {{- $instanceResourceName := printf "%s_%s" $node.Name $resourceSuffix }}

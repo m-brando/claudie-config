@@ -9,14 +9,14 @@
 
 
 locals {
-  protocol_to_azure_protocol_{{ $uniqueFingerPrint }} = {
+  protocol_to_azure_protocol_{{ $specName }}_{{ $uniqueFingerPrint }} = {
     "tcp"    = "Tcp"
     "udp"    = "Udp"
     "icmp"   = "Icmp"
   }
 }
 
-{{- $basePriority  := printf "base_priority_%s"   $uniqueFingerPrint }}
+{{- $basePriority  := printf "base_priority_%s_%s" $specName $uniqueFingerPrint }}
 variable "{{ $basePriority }}" {
   type    = number
   default = 200
@@ -110,7 +110,7 @@ resource "azurerm_network_security_group" "{{ $networkSecurityGroupResourceName 
     priority                   = var.{{ $basePriority }} + {{ $i }}
     direction                  = "Inbound"
     access                     = "Allow"
-    protocol                   = lookup(local.protocol_to_azure_protocol_{{ $uniqueFingerPrint }}, "{{ $role.Protocol }}", "undefined")
+    protocol                   = lookup(local.protocol_to_azure_protocol_{{ $specName }}_{{ $uniqueFingerPrint }}, "{{ $role.Protocol }}", "undefined")
     source_port_range          = "*"
     destination_port_range     = "{{ $role.Port }}"
     source_address_prefix      = "*"

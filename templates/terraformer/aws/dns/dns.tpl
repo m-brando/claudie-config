@@ -24,7 +24,7 @@ data "aws_route53_zone" "aws_zone_{{ $resourceSuffix }}" {
 resource "aws_route53_record" "record_{{ $resourceSuffix }}" {
     provider  = aws.dns_aws_{{ $resourceSuffix }}
     zone_id   = "${data.aws_route53_zone.aws_zone_{{ $resourceSuffix }}.zone_id}"
-    name      = "{{ .Data.HostnameHash }}.${data.aws_route53_zone.aws_zone_{{ $resourceSuffix }}.name}"
+    name      = "{{ .Data.Hostname }}.${data.aws_route53_zone.aws_zone_{{ $resourceSuffix }}.name}"
     type      = "A"
     ttl       = 300
     records   = [
@@ -34,6 +34,7 @@ resource "aws_route53_record" "record_{{ $resourceSuffix }}" {
     ]
 }
 
-output "{{ .Data.ClusterName }}_{{ .Data.ClusterHash }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
+{{- $clusterID := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
+output "{{ $clusterID }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
     value = { "{{ .Data.ClusterName }}-{{ .Data.ClusterHash }}-endpoint" = aws_route53_record.record_{{ $resourceSuffix }}.name }
 }

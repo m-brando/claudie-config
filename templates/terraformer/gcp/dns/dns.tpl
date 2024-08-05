@@ -17,7 +17,7 @@ data "google_dns_managed_zone" "gcp_zone_{{ $resourceSuffix }}" {
 resource "google_dns_record_set" "record_{{ $resourceSuffix }}" {
   provider = google.dns_gcp_{{ $resourceSuffix }}
 
-  name = "{{ .Data.HostnameHash }}.${data.google_dns_managed_zone.gcp_zone_{{ $resourceSuffix }}.dns_name}"
+  name = "{{ .Data.Hostname }}.${data.google_dns_managed_zone.gcp_zone_{{ $resourceSuffix }}.dns_name}"
   type = "A"
   ttl  = 300
 
@@ -30,6 +30,7 @@ resource "google_dns_record_set" "record_{{ $resourceSuffix }}" {
     ]
 }
 
-output "{{.Data.ClusterName}}_{{.Data.ClusterHash}}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
+{{- $clusterID := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
+output "{{ $clusterID }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
   value = { "{{.Data.ClusterName}}-{{.Data.ClusterHash}}-endpoint" = google_dns_record_set.record_{{ $resourceSuffix }}.name }
 }

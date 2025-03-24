@@ -59,7 +59,7 @@
                 - sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
                 - cat /root/.ssh/temp > /root/.ssh/authorized_keys
                 - rm /root/.ssh/temp
-                - echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
+                - echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
                 # Disable iptables
                 # Accept all traffic to avoid ssh lockdown via iptables firewall rules
                 - iptables -P INPUT ACCEPT
@@ -71,6 +71,17 @@
                 - iptables -Z
                 # Make changes persistent
                 - netfilter-persistent save
+                - |
+                  # The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
+                  sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
+                  ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
+
+                  if [ $sshd_active = 'active' ]; then
+                      systemctl restart sshd
+                  fi
+                  if [ $ssh_active = 'active' ]; then
+                      systemctl restart ssh
+                  fi
               EOF
               )
           }
@@ -93,6 +104,17 @@
                 - cat /root/.ssh/temp > /root/.ssh/authorized_keys
                 - rm /root/.ssh/temp
                 - echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
+                - |
+                  # The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
+                  sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
+                  ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
+
+                  if [ $sshd_active = 'active' ]; then
+                      systemctl restart sshd
+                  fi
+                  if [ $ssh_active = 'active' ]; then
+                      systemctl restart ssh
+                  fi
                 # Disable iptables
                 # Accept all traffic to avoid ssh lockdown via iptables firewall rules
                 - iptables -P INPUT ACCEPT

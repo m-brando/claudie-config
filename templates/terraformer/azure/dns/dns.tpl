@@ -1,6 +1,7 @@
 {{- $specName          := .Data.Provider.SpecName }}
 {{- $uniqueFingerPrint := .Fingerprint }}
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
+{{- $clusterID         := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
 
 provider "azurerm" {
   features {}
@@ -29,7 +30,6 @@ resource "azurerm_dns_a_record" "record_{{ $resourceSuffix }}" {
   ]
 }
 
-{{- $clusterID := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
-output "{{ $clusterID }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
-    value = { "{{ .Data.ClusterName }}-{{.Data.ClusterHash }}-endpoint" = format("%s.%s", azurerm_dns_a_record.record_{{ $resourceSuffix }}.name, azurerm_dns_a_record.record_{{ $resourceSuffix }}.zone_name)}
+output "{{ $clusterID }}_{{ $resourceSuffix }}" {
+    value = { "{{ $clusterID }}-endpoint" = format("%s.%s", azurerm_dns_a_record.record_{{ $resourceSuffix }}.name, azurerm_dns_a_record.record_{{ $resourceSuffix }}.zone_name)}
 }

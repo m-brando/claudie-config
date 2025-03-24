@@ -1,6 +1,7 @@
 {{- $specName          := .Data.Provider.SpecName }}
 {{- $uniqueFingerPrint := .Fingerprint }}
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
+{{- $clusterID         := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
 
 provider "hetznerdns" {
     apitoken = "${file("{{ $specName }}")}"
@@ -28,7 +29,6 @@ data "hetznerdns_zone" "hetzner_zone_{{ $resourceSuffix }}" {
 
 {{- end }}
 
-{{- $clusterID := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
-output "{{ $clusterID }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
-  value = { "{{ .Data.ClusterName }}-{{ .Data.ClusterHash }}-endpoint" = format("%s.%s", "{{ .Data.Hostname }}", "{{ .Data.DNSZone }}")}
+output "{{ $clusterID }}_{{ $resourceSuffix }}" {
+  value = { "{{ $clusterID }}-endpoint" = format("%s.%s", "{{ .Data.Hostname }}", "{{ .Data.DNSZone }}")}
 }

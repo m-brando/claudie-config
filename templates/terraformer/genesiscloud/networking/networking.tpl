@@ -10,15 +10,6 @@
 {{- range $_, $region := .Data.Regions }}
 
 {{- $resourceSuffix := printf "%s_%s_%s" $region $specName $uniqueFingerPrint }}
-
-data "genesiscloud_images" "base_os_{{ $resourceSuffix }}" {
-  provider   = genesiscloud.nodepool_{{ $resourceSuffix }}
-  filter = {
-    type   = "base-os"
-    region = "{{ $region }}"
-  }
-}
-
 {{- $securityGroupResourceName := printf "claudie_security_group_%s" $resourceSuffix }}
 {{- $securityGroupName         := printf "sg%s%s-%s" $clusterHash $uniqueFingerPrint $region }}
 

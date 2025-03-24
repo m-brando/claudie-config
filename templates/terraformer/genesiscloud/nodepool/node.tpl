@@ -27,6 +27,8 @@ resource "genesiscloud_ssh_key" "{{ $sshKeyResourceName }}" {
         {{- $volumeName                   := printf "%sd" $node.Name }}
         {{- $isWorkerNodeWithDiskAttached := and (not $nodepool.IsControl) (gt $nodepool.Details.StorageDiskSize 0) }}
         {{- $instanceResourceName         := printf "%s_%s" $node.Name $resourceSuffix }}
+        {{- $floatingIPResourceName       := printf "%s_%s_ip" $node.Name $resourceSuffix }}
+        {{- $floatingIPName               := printf "%sip" $node.Name }}
         {{- $securityGroupResourceName    := printf "claudie_security_group_%s" $resourceSuffix }}
 
         {{- if and ($isKubernetesCluster) ($isWorkerNodeWithDiskAttached) }}
@@ -39,15 +41,21 @@ resource "genesiscloud_ssh_key" "{{ $sshKeyResourceName }}" {
             }
         {{- end }}
 
+        resource "genesiscloud_floating_ip" "{{ $floatingIPResourceName }}" {
+            provider = genesiscloud.nodepool_{{ $resourceSuffix }}
+            name = "{{ $floatingIPName }}"
+            region = "{{ $region }}"
+            version = "ipv4"
+        }
+
         resource "genesiscloud_instance" "{{ $instanceResourceName }}" {
           provider = genesiscloud.nodepool_{{ $resourceSuffix }}
           name   = "{{ $node.Name }}"
           region = "{{ $region }}"
 
-          image_id = data.genesiscloud_images.base_os_{{ $resourceSuffix }}.images[index(data.genesiscloud_images.base_os_{{ $resourceSuffix }}.images.*.name, "{{ $nodepool.Details.Image}}")].id
+          floating_ip_id = genesiscloud_floating_ip.{{ $floatingIPResourceName }}.id
+          image    = replace(lower("{{ $nodepool.Details.Image }}"), " ", "-")
           type     = "{{ $nodepool.Details.ServerType }}"
-
-          public_ip_type = "static"
 
         {{- if and ($isKubernetesCluster) ($isWorkerNodeWithDiskAttached) }}
           volume_ids = [
@@ -69,7 +77,19 @@ resource "genesiscloud_ssh_key" "{{ $sshKeyResourceName }}" {
 #!/bin/bash
 set -eo pipefail
 sudo sed -i -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys
-echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
+
+# The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
+sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
+ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
+
+if [ $sshd_active = 'active' ]; then
+    systemctl restart sshd
+fi
+
+if [ $ssh_active = 'active' ]; then
+    systemctl restart ssh
+fi
 EOF
               }
           {{- end }}
@@ -82,20 +102,37 @@ set -eo pipefail
 
 # Allow ssh as root
 sudo sed -i -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys
-echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
 
-# startup script
+# The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
+sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
+ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
+
+if [ $sshd_active = 'active' ]; then
+    systemctl restart sshd
+fi
+
+if [ $ssh_active = 'active' ]; then
+    systemctl restart ssh
+fi
+
 mkdir -p /opt/claudie/data
             {{- if $isWorkerNodeWithDiskAttached }}
 sleep 30
-# The IDs listed by `/dev/disk/by-id` are different then the volume ids assigned by genesis cloud.
-# This is a hacky way assuming that only the longhorn volume will be mounted at startup and no other volume
-longhorn_diskuuid=$(blkid | grep genesis_cloud | grep -oP 'UUID="\K[^"]+')
-disk=$(ls -l /dev/disk/by-uuid/ | grep $longhorn_diskuuid | awk '{print $NF}')
-disk=$(basename "$disk")
 
-# The volume is automatically mounted, since we want it for longhorn specifically we have to re-mount the volume under /opt/claudie/data.
-umount -l /dev/$disk
+# it seems to be not possible to reference volume.id in the startupscript, thus the following hacky way of determining the volume id.
+for id in $(ls /dev/disk/by-id); do
+    device=$(readlink "/dev/disk/by-id/$id")
+    device=$(basename $device)
+    if ! blkid | grep -q "$device"; then
+        disk=$device
+        break;
+    fi;
+done
+
+if [ -z "$disk" ]; then
+    exit 1
+fi
 
 if ! grep -qs "/dev/$disk" /proc/mounts; then
   if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
@@ -106,7 +143,7 @@ if ! grep -qs "/dev/$disk" /proc/mounts; then
 fi
             {{- end }}
 EOF
-          }
+              }
           {{- end }}
         }
     {{- end }}

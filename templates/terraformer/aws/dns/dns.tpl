@@ -1,6 +1,7 @@
 {{- $specName          := .Data.Provider.SpecName }}
 {{- $uniqueFingerPrint := .Fingerprint }}
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
+{{- $clusterID         := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
 
 provider "aws" {
   secret_key = "${file("{{ $specName }}")}"
@@ -34,7 +35,6 @@ resource "aws_route53_record" "record_{{ $resourceSuffix }}" {
     ]
 }
 
-{{- $clusterID := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
-output "{{ $clusterID }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
-    value = { "{{ .Data.ClusterName }}-{{ .Data.ClusterHash }}-endpoint" = aws_route53_record.record_{{ $resourceSuffix }}.name }
+output "{{ $clusterID }}_{{ $resourceSuffix }}" {
+    value = { "{{ $clusterID }}-endpoint" = aws_route53_record.record_{{ $resourceSuffix }}.name }
 }

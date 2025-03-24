@@ -2,6 +2,7 @@
 {{- $gcpProject        := .Data.Provider.GetGcp.Project }}
 {{- $uniqueFingerPrint := .Fingerprint }}
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
+{{- $clusterID         := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
 
 provider "google" {
     credentials = "${file("{{ $specName }}")}"
@@ -30,7 +31,6 @@ resource "google_dns_record_set" "record_{{ $resourceSuffix }}" {
     ]
 }
 
-{{- $clusterID := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
 output "{{ $clusterID }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
-  value = { "{{.Data.ClusterName}}-{{.Data.ClusterHash}}-endpoint" = google_dns_record_set.record_{{ $resourceSuffix }}.name }
+  value = { "{{ $clusterID }}-endpoint" = google_dns_record_set.record_{{ $resourceSuffix }}.name }
 }

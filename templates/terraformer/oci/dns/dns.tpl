@@ -1,6 +1,7 @@
 {{- $specName          := .Data.Provider.SpecName }}
 {{- $uniqueFingerPrint := .Fingerprint }}
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
+{{- $clusterID         := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
 
 provider "oci" {
   tenancy_ocid      = "{{ .Data.Provider.GetOci.TenancyOCID }}"
@@ -34,7 +35,6 @@ resource "oci_dns_rrset" "record_{{ $resourceSuffix }}" {
     {{- end }}
 }
 
-{{- $clusterID := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
-output "{{ $clusterID }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
-  value = { "{{ .Data.ClusterName }}-{{ .Data.ClusterHash }}-endpoint" = oci_dns_rrset.record_{{ $resourceSuffix }}.domain }
+output "{{ $clusterID }}_{{ $resourceSuffix }}" {
+  value = { "{{ $clusterID }}-endpoint" = oci_dns_rrset.record_{{ $resourceSuffix }}.domain }
 }

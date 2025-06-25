@@ -21,18 +21,18 @@ data "aws_route53_zone" "aws_zone_{{ $resourceSuffix }}" {
     name      = "{{ .Data.DNSZone }}"
 }
 
-resource "aws_route53_record" "record_{{ $resourceSuffix }}" {
+{{- range $ip := .Data.RecordData.IP }}
+resource "aws_route53_record" "record_{{ $ip.V4 }}_{{ $resourceSuffix }}" {
     provider  = aws.dns_aws_{{ $resourceSuffix }}
     zone_id   = "${data.aws_route53_zone.aws_zone_{{ $resourceSuffix }}.zone_id}"
     name      = "{{ .Data.Hostname }}.${data.aws_route53_zone.aws_zone_{{ $resourceSuffix }}.name}"
     type      = "A"
     ttl       = 300
     records   = [
-    {{- range $ip := .Data.RecordData.IP }}
         "{{ $ip.V4 }}",
-    {{- end }}
     ]
 }
+{{- end }}
 
 {{- $clusterID := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
 output "{{ $clusterID }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {

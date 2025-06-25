@@ -25,7 +25,7 @@ data "aws_route53_zone" "aws_zone_{{ $resourceSuffix }}" {
 resource "aws_route53_record" "record_{{ $ip.V4 }}_{{ $resourceSuffix }}" {
     provider  = aws.dns_aws_{{ $resourceSuffix }}
     zone_id   = "${data.aws_route53_zone.aws_zone_{{ $resourceSuffix }}.zone_id}"
-    name      = "{{ .Data.Hostname }}.${data.aws_route53_zone.aws_zone_{{ $resourceSuffix }}.name}"
+    name      = "{{ $ip.V4 }}.${data.aws_route53_zone.aws_zone_{{ $resourceSuffix }}.name}"
     type      = "A"
     ttl       = 300
     records   = [

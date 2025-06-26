@@ -35,7 +35,7 @@ resource "aws_route53_record" "record_{{ $hostname }}_{{ $ip_hash }}_{{ $resourc
     ]
 
     set_identifier = "record_{{ $hostname }}_{{ $ip_hash }}_{{ $resourceSuffix }}"
-    health_check_id = hc_{{ $hostname }}_{{ $ip_hash }}_{{ $resourceSuffix }}
+    health_check_id = aws_route53_health_check.hc_{{ $hostname }}_{{ $ip_hash }}_{{ $resourceSuffix }}.id
 
     weighted_routing_policy {
       weight = 1
@@ -50,8 +50,8 @@ resource "aws_route53_health_check" "hc_{{ $hostname }}_{{ $ip_hash }}_{{ $resou
   failure_threshold = 3
   ip_address        = "{{ $ip.V4 }}"
 }
-{{- end }}
 
+{{- end }}
 {{- $clusterID := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
 output "{{ $clusterID }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
     value = { "{{ .Data.ClusterName }}-{{ .Data.ClusterHash }}-endpoint" = {{ $hostname }}.aws_route53_record.record_{{ $resourceSuffix }}.name }

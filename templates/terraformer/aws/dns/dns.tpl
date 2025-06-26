@@ -23,7 +23,7 @@ data "aws_route53_zone" "aws_zone_{{ $resourceSuffix }}" {
 }
 
 {{- range $ip := .Data.RecordData.IP }}
-resource "aws_route53_record" "record_{{ $hostname }}_{{ replace $ip.V4 "." "_" }}_{{ $resourceSuffix }}" {
+resource "aws_route53_record" "record_{{ $hostname }}_{{ $ip.V4 }}_{{ $resourceSuffix }}" {
     provider  = aws.dns_aws_{{ $resourceSuffix }}
     zone_id   = "${data.aws_route53_zone.aws_zone_{{ $resourceSuffix }}.zone_id}"
     name      = "{{ $hostname }}.${data.aws_route53_zone.aws_zone_{{ $resourceSuffix }}.name}"

@@ -1,4 +1,5 @@
 {{- $hostname          := .Data.Hostname }}
+{{- $port              := .Data.Role.Port }}
 {{- $specName          := .Data.Provider.SpecName }}
 {{- $uniqueFingerPrint := .Fingerprint }}
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
@@ -44,7 +45,7 @@ resource "aws_route53_record" "record_{{ $hostname }}_{{ $ip_hash }}_{{ $resourc
 
 resource "aws_route53_health_check" "hc_{{ $hostname }}_{{ $ip_hash }}_{{ $resourceSuffix }}" {
   provider  = aws.dns_aws_{{ $resourceSuffix }}
-  port              = 6443
+  port              = {{ $port }}
   type              = "TCP"
   request_interval  = 30
   failure_threshold = 3

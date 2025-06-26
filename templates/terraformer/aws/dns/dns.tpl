@@ -33,10 +33,26 @@ resource "aws_route53_record" "record_{{ $hostname }}_{{ $ip_hash }}_{{ $resourc
     records   = [
         "{{ $ip.V4 }}",
     ]
+
+    set_identifier = "record_{{ $hostname }}_{{ $ip_hash }}_{{ $resourceSuffix }}"
+    health_check_id = hc_{{ $hostname }}_{{ $ip_hash }}_{{ $resourceSuffix }}
+
+    weighted_routing_policy {
+      weight = 1
+    }
+}
+
+resource "aws_route53_health_check" "hc_{{ $hostname }}_{{ $ip_hash }}_{{ $resourceSuffix }}" {
+  provider  = aws.dns_aws_{{ $resourceSuffix }}
+  port              = 6443
+  type              = "TCP"
+  request_interval  = 30
+  failure_threshold = 3
+  ip_address        = "{{ $ip.V4 }}"
 }
 {{- end }}
 
 {{- $clusterID := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
 output "{{ $clusterID }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
-    value = { "{{ .Data.ClusterName }}-{{ .Data.ClusterHash }}-endpoint" = aws_route53_record.record_{{ $resourceSuffix }}.name }
+    value = { "{{ .Data.ClusterName }}-{{ .Data.ClusterHash }}-endpoint" = {{ $hostname }}.aws_route53_record.record_{{ $resourceSuffix }}.name }
 }

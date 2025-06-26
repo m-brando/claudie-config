@@ -52,7 +52,3 @@ resource "aws_route53_health_check" "hc_{{ $hostname }}_{{ $ip_hash }}_{{ $resou
 }
 
 {{- end }}
-{{- $clusterID := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
-output "{{ $clusterID }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
-    value = { "{{ .Data.ClusterName }}-{{ .Data.ClusterHash }}-endpoint" = {{ $hostname }}.aws_route53_record.record_{{ $resourceSuffix }}.name }
-}

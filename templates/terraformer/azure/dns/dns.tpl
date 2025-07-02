@@ -40,7 +40,7 @@ resource "azurerm_traffic_manager_profile" "traffic_manager_{{ $hostname }}_{{ $
 resource "azurerm_traffic_manager_external_endpoint" "endpoint_{{ $hostname }}_{{ $ip_hash }}_{{ $resourceSuffix}}" {
   provider            = azurerm.dns_azure_{{ $resourceSuffix }}
   name                 = "{{ $hostname }}_{{ $ip_hash }}_{{ $resourceSuffix}}"
-  profile_id           = azurerm_traffic_manager_profile.traffic_manager_{{ $resourceSuffix}}.id
+  profile_id           = azurerm_traffic_manager_profile.traffic_manager_{{ $hostname }}_{{ $resourceSuffix}}.id
   weight               = 1
   target               = "{{ $ip.V4 }}"
 }
@@ -53,7 +53,7 @@ resource "azurerm_dns_cname_record" "record_{{ $resourceSuffix }}" {
   zone_name           = data.azurerm_dns_zone.azure_zone_{{ $resourceSuffix }}.name
   resource_group_name = data.azurerm_dns_zone.azure_zone_{{ $resourceSuffix }}.resource_group_name
   ttl                 = 300
-  record             = azurerm_traffic_manager_profile.traffic_manager_{{ $resourceSuffix}}.fqdn
+  record             = azurerm_traffic_manager_profile.traffic_manager_{{ $hostname }}_{{ $resourceSuffix}}.fqdn
 }
 
 {{- $clusterID := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}

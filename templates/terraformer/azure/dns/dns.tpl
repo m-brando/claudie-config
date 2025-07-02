@@ -1,4 +1,5 @@
 {{- $hostname          := .Data.Hostname }}
+{{- $protocol          := .Data.Role.Protocol }}
 {{- $port              := .Data.Role.Port }}
 {{- $specName          := .Data.Provider.SpecName }}
 {{- $uniqueFingerPrint := .Fingerprint }}

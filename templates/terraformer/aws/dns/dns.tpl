@@ -47,7 +47,7 @@ resource "aws_route53_record" "record_{{ $hostname }}_{{ $ip_hash }}_{{ $resourc
 resource "aws_route53_health_check" "hc_{{ $hostname }}_{{ $ip_hash }}_{{ $resourceSuffix }}" {
   provider  = aws.dns_aws_{{ $resourceSuffix }}
   port              = {{ $port }}
-  type              = "$protocol"
+  type              = {{ upper "$protocol" }}
   request_interval  = 30
   failure_threshold = 3
   ip_address        = "{{ $ip.V4 }}"

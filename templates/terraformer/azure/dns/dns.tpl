@@ -32,7 +32,7 @@ resource "azurerm_traffic_manager_profile" "traffic_manager_{{ $hostname }}_{{ $
   }
 
   monitor_config {
-    protocol = "{{ $protocol }}"
+    protocol = "{{ upper $protocol }}"
     port     = {{ $port }}
   }
 }

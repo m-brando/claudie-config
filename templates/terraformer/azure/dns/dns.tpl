@@ -1,4 +1,5 @@
 {{- $hostname          := .Data.Hostname }}
+{{- $port              := .Data.Role.Port }}
 {{- $specName          := .Data.Provider.SpecName }}
 {{- $uniqueFingerPrint := .Fingerprint }}
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
@@ -30,8 +31,8 @@ resource "azurerm_traffic_manager_profile" "traffic_manager_{{ $hostname }}_{{ $
   }
 
   monitor_config {
-    protocol = "TCP"
-    port     = 6443
+    protocol = "{{ $protocol }}"
+    port     = {{ $port }}
   }
 }
 

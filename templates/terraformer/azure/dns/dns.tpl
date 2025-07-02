@@ -17,15 +17,15 @@ data "azurerm_dns_zone" "azure_zone_{{ $resourceSuffix }}" {
     name     = "{{ .Data.DNSZone }}"
 }
 
-resource "azurerm_traffic_manager_profile" "traffic_manager_{{ $resourceSuffix}}" {
+resource "azurerm_traffic_manager_profile" "traffic_manager_{{ $hostname }}_{{ $resourceSuffix}}" {
   provider            = azurerm.dns_azure_{{ $resourceSuffix }}
-  name                = "traffic_manager_{{ .Data.DNSZone }}"
+  name                = "traffic-manager-{{ $hostname }}-{{ $resourceSuffix }}"
   resource_group_name = data.azurerm_dns_zone.azure_zone_{{ $resourceSuffix }}.resource_group_name
 
   traffic_routing_method = "Weighted"
 
   dns_config {
-    relative_name = "tm"
+    relative_name = "{{ $hostname }}-{{ $resourceSuffix }}"
     ttl           = 30
   }
 
@@ -41,8 +41,7 @@ resource "azurerm_traffic_manager_external_endpoint" "endpoint_{{ $hostname }}_{
   provider            = azurerm.dns_azure_{{ $resourceSuffix }}
   name                 = "{{ $hostname }}_{{ $ip_hash }}_{{ $resourceSuffix}}"
   profile_id           = azurerm_traffic_manager_profile.traffic_manager_{{ $resourceSuffix}}.id
-  always_serve_enabled = true
-  weight               = 100
+  weight               = 1
   target               = "{{ $ip.V4 }}"
 }
 {{- end }}
@@ -54,7 +53,7 @@ resource "azurerm_dns_cname_record" "record_{{ $resourceSuffix }}" {
   zone_name           = data.azurerm_dns_zone.azure_zone_{{ $resourceSuffix }}.name
   resource_group_name = data.azurerm_dns_zone.azure_zone_{{ $resourceSuffix }}.resource_group_name
   ttl                 = 300
-  record             = azurerm_traffic_manager_profile.fqdn
+  record             = azurerm_traffic_manager_profile.traffic_manager_{{ $resourceSuffix}}.fqdn
 }
 
 {{- $clusterID := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}

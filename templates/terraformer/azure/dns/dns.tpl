@@ -19,13 +19,13 @@ data "azurerm_dns_zone" "azure_zone_{{ $resourceSuffix }}" {
 
 resource "azurerm_traffic_manager_profile" "traffic_manager_{{ $hostname }}_{{ $resourceSuffix}}" {
   provider            = azurerm.dns_azure_{{ $resourceSuffix }}
-  name                = "traffic-manager-{{ $hostname }}-{{ $resourceSuffix }}"
+  name                = "traffic-manager-{{ $hostname }}"
   resource_group_name = data.azurerm_dns_zone.azure_zone_{{ $resourceSuffix }}.resource_group_name
 
   traffic_routing_method = "Weighted"
 
   dns_config {
-    relative_name = "{{ $hostname }}-{{ $resourceSuffix }}"
+    relative_name = "{{ $hostname }}"
     ttl           = 30
   }
 

@@ -43,7 +43,7 @@ resource "azurerm_traffic_manager_external_endpoint" "endpoint_{{ $hostname }}_{
   profile_id           = azurerm_traffic_manager_profile.traffic_manager_{{ $resourceSuffix}}.id
   always_serve_enabled = true
   weight               = 100
-  target               = "{{ $ip.V4 }}""
+  target               = "{{ $ip.V4 }}"
 }
 {{- end }}
 

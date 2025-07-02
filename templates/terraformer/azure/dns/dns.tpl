@@ -54,7 +54,7 @@ resource "azurerm_dns_cname_record" "record_{{ $resourceSuffix }}" {
   zone_name           = data.azurerm_dns_zone.azure_zone_{{ $resourceSuffix }}.name
   resource_group_name = data.azurerm_dns_zone.azure_zone_{{ $resourceSuffix }}.resource_group_name
   ttl                 = 300
-  records             = azurerm_traffic_manager_profile.fqdn
+  record             = azurerm_traffic_manager_profile.fqdn
 }
 
 {{- $clusterID := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}

@@ -39,13 +39,13 @@ resource "google_dns_record_set" "record_{{ $resourceSuffix }}" {
   routing_policy {
     health_check = google_compute_health_check.gcp_health_check_{{ $resourceSuffix }}.id
     wrr {
-      health_checked_targets{
-        external_endpoints [
+      health_checked_targets {
+        external_endpoints = [
         {{- range $ip := .Data.RecordData.IP }}
           "{{ $ip.V4 }}",
         ]
-      },
-      weight  = 1
+      }
+      weight = 1
   }
   {{- end }}
   }

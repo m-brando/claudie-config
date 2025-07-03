@@ -12,6 +12,7 @@ provider "google" {
 }
 
 resource "google_compute_health_check" "gcp_health_check_{{ $resourceSuffix }}" {
+  provider = google.dns_gcp_{{ $resourceSuffix }}
   name               = "{{ $hostname }}.${data.google_dns_managed_zone.gcp_zone_{{ $resourceSuffix }}.dns_name}"
   check_interval_sec = 5
   timeout_sec        = 5

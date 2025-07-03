@@ -42,12 +42,12 @@ resource "google_dns_record_set" "record_{{ $resourceSuffix }}" {
       health_checked_targets {
         external_endpoints = [
         {{- range $ip := .Data.RecordData.IP }}
-          {{ $ip.V4 }},
+          "{{ $ip.V4 }}",
+        {{- end }}
         ]
       }
       weight = 1
-  }
-  {{- end }}
+    }
   }
 }
 

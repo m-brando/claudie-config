@@ -12,26 +12,35 @@ provider "oci" {
 }
 
 data "oci_dns_zones" "oci_zone_{{ $resourceSuffix }}" {
-    provider        = oci.dns_oci_{{ $resourceSuffix }}
-    compartment_id  = "{{ .Data.Provider.GetOci.CompartmentOCID }}"
-    name            = "{{ .Data.DNSZone }}"
+  provider        = oci.dns_oci_{{ $resourceSuffix }}
+  compartment_id  = "{{ .Data.Provider.GetOci.CompartmentOCID }}"
+  name            = "{{ .Data.DNSZone }}"
 }
 
-resource "oci_dns_rrset" "record_{{ $resourceSuffix }}" {
-    provider        = oci.dns_oci_{{ $resourceSuffix }}
-    domain          = "{{ .Data.Hostname }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"
-    rtype           = "A"
-    zone_name_or_id = data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name
+resource "oci_dns_steering_policy" "oci_steering_policy_{{ $resourceSuffix }}" {
+  provider        = oci.dns_oci_{{ $resourceSuffix }}
+  compartment_id  = "{{ .Data.Provider.GetOci.CompartmentOCID }}"
+  display_name    = "{{ .Data.Hostname }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"
+  template        = "LOAD_BALANCE"
+  ttl             = 300
 
-    compartment_id  = "{{ .Data.Provider.GetOci.CompartmentOCID }}"
+  {{- range $ip := .Data.RecordData.IP }}
+  answers {
+    name = "{{ $ip.V4 }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"
+    rdata = "{{ $ip.V4 }}"
+    rtype = "A"
+  }
+  {{- end }}
+
+  rules {
+		rule_type = "WEIGHTED"
     {{- range $ip := .Data.RecordData.IP }}
-    items {
-       domain = "{{ $.Data.Hostname }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"
-       rdata  = "{{ $ip.V4 }}"
-       rtype  = "A"
-       ttl    = 300
+    default_answer_data {
+      answer_condition = "answer.name == '"{{ $ip.V4 }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"'"
+      value = 1
     }
     {{- end }}
+  }
 }
 
 {{- $clusterID := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}

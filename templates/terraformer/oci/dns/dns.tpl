@@ -59,7 +59,7 @@ resource "oci_dns_steering_policy" "oci_steering_policy_{{ $resourceSuffix }}" {
 }
 
 locals {
-  matching_zone = [for z in data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.zones : z if z.name == "data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name"][0]
+  matching_zone = [for z in data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.zones : z if z.name == "${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"][0]
 }
 
 resource "oci_dns_steering_policy_attachment" "dns_steering_policy_attachment_{{ $resourceSuffix }}" {

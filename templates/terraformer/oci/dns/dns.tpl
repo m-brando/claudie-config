@@ -58,11 +58,15 @@ resource "oci_dns_steering_policy" "oci_steering_policy_{{ $resourceSuffix }}" {
   }
 }
 
+locals {
+  matching_zone = [for z in data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.zones : z if z.name == "${data.oci_dns_zones.oci_zone_oci_{{ $resourceSuffix }}.name}"][0]
+}
+
 resource "oci_dns_steering_policy_attachment" "dns_steering_policy_attachment_{{ $resourceSuffix }}" {
   provider        = oci.dns_oci_{{ $resourceSuffix }}
 	domain_name = "{{ $hostname }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"
 	steering_policy_id = oci_dns_steering_policy.oci_steering_policy_{{ $resourceSuffix }}.id
-	zone_id = data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.id
+	zone_id = zone_id = local.matching_zone.id
 
 }
 

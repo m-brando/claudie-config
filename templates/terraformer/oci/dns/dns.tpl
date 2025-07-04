@@ -58,7 +58,7 @@ resource "oci_dns_steering_policy" "oci_steering_policy_{{ $resourceSuffix }}" {
   }
 }
 
-resource "oci_dns_steering_policy_attachment" "test_steering_policy_attachment" {
+resource "oci_dns_steering_policy_attachment" "dns_steering_policy_attachment_{{ $resourceSuffix }}" {
   provider        = oci.dns_oci_{{ $resourceSuffix }}
 	domain_name = "{{ $hostname }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"
 	steering_policy_id = oci_dns_steering_policy.oci_steering_policy_{{ $resourceSuffix }}.id

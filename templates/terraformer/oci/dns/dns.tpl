@@ -1,5 +1,6 @@
 {{- $specName          := .Data.Provider.SpecName }}
 {{- $hostname          := .Data.Hostname }}
+{{- $port              := .Data.Role.Port }}
 {{- $uniqueFingerPrint := .Fingerprint }}
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
 
@@ -18,12 +19,26 @@ data "oci_dns_zones" "oci_zone_{{ $resourceSuffix }}" {
   name            = "{{ .Data.DNSZone }}"
 }
 
+resource "oci_health_checks_ping_monitor" "oci_health_checks_{{ $resourceSuffix }}" {
+  compartment_id  = "{{ .Data.Provider.GetOci.CompartmentOCID }}"
+  display_name    = "health-check-{{ $hostname }}"
+  interval_in_seconds = 30
+  protocol = TCP
+  port  = {{ $port }}
+  targets = [
+    {{- range $ip := .Data.RecordData.IP }}
+      "{{ $ip.V4 }}",
+    {{- end }}
+  ]
+}
+
 resource "oci_dns_steering_policy" "oci_steering_policy_{{ $resourceSuffix }}" {
   provider        = oci.dns_oci_{{ $resourceSuffix }}
   compartment_id  = "{{ .Data.Provider.GetOci.CompartmentOCID }}"
   display_name    = "{{ $hostname }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"
   template        = "LOAD_BALANCE"
   ttl             = 300
+  health_check_monitor_id = oci_health_checks_ping_monitor.oci_health_checks_{{ $resourceSuffix }}.id
 
   {{- range $ip := .Data.RecordData.IP }}
   answers {
@@ -40,6 +55,11 @@ resource "oci_dns_steering_policy" "oci_steering_policy_{{ $resourceSuffix }}" {
         answer_condition = "answer.isDisabled != true"
         should_keep      = "true"
     }
+  }
+
+  rules {
+    rule_type   = "HEALTH"
+    description = "Removes unhealthy target"
   }
 
   rules {

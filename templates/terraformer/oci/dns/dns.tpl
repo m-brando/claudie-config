@@ -20,10 +20,11 @@ data "oci_dns_zones" "oci_zone_{{ $resourceSuffix }}" {
 }
 
 resource "oci_health_checks_ping_monitor" "oci_health_checks_{{ $resourceSuffix }}" {
+  provider        = oci.dns_oci_{{ $resourceSuffix }}
   compartment_id  = "{{ .Data.Provider.GetOci.CompartmentOCID }}"
   display_name    = "health-check-{{ $hostname }}"
   interval_in_seconds = 30
-  protocol = TCP
+  protocol = "TCP"
   port  = {{ $port }}
   targets = [
     {{- range $ip := .Data.RecordData.IP }}

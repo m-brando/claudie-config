@@ -13,6 +13,15 @@
 
     {{- range $node := $nodepool.Nodes }}
 
+        {{- $computeExternalIpResourceName  := printf "%s_%s_external_ip" $node.Name $resourceSuffix }}
+        {{- $computeExternalIpName          := printf "%s-ext-ip" $node.Name }}
+
+        resource "google_compute_address" "{{ $computeExternalIpResourceName }}" {
+          provider      = google.nodepool_{{ $resourceSuffix }}
+          name          = "{{ $computeExternalIpName }}"
+          description   = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
+        }
+
         {{- $computeInstanceResourceName  := printf "%s_%s" $node.Name $resourceSuffix }}
         {{- $computeSubnetResourceName    := printf "%s_%s_subnet" $nodepool.Name $resourceSuffix }}
         {{- $varStorageDiskName           := printf "gcp_storage_disk_name_%s" $resourceSuffix }}
@@ -28,7 +37,9 @@
 
           network_interface {
             subnetwork = google_compute_subnetwork.{{ $computeSubnetResourceName }}.self_link
-            access_config {}
+            access_config {
+              nat_ip = google_compute_address.{{ $computeExternalIpResourceName }}.address
+            }
           }
 
           metadata = {

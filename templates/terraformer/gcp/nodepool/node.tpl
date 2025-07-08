@@ -18,7 +18,7 @@
 
         resource "google_compute_address" "{{ $computeExternalIpResourceName }}" {
           provider      = google.nodepool_{{ $resourceSuffix }}
-          name          = "{{ computeExternalIpName }}"
+          name          = "{{ $computeExternalIpName }}"
           description   = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
         }
 

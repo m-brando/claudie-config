@@ -14,7 +14,7 @@
     {{- range $node := $nodepool.Nodes }}
 
         {{- $computeExternalIpResourceName  := printf "%s_%s_external_ip" $node.Name $resourceSuffix }}
-        {{- $computeExternalIpName          := printf "%s_ext_ip" $node.Name }}
+        {{- $computeExternalIpName          := printf "%s-ext-ip" $node.Name }}
 
         resource "google_compute_address" "{{ $computeExternalIpResourceName }}" {
           provider      = google.nodepool_{{ $resourceSuffix }}

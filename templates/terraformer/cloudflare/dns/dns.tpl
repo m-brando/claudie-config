@@ -39,7 +39,7 @@ resource "cloudflare_load_balancer_monitor" "monitor_{{ $resourceSuffix }}" {
   provider   = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
   account_id = ""
   type        = {{ upper "$protocol" }}
-  port        = {{ port }}
+  port        = {{ $port }}
   timeout     = 5
   retries     = 2
   interval    = 60

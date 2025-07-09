@@ -1,4 +1,6 @@
 {{- $specName          := .Data.Provider.SpecName }}
+{{- $protocol          := .Data.Role.Protocol }}
+{{- $port              := .Data.Role.Port }}
 {{- $uniqueFingerPrint := .Fingerprint }}
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
 
@@ -12,21 +14,48 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
   name       = "{{ .Data.DNSZone }}"
 }
 
+resource "cloudflare_load_balancer_pool" "lb_pool_{{ $resourceSuffix }}" {
+  account_id = ""
+  provider  = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
+  name      = "pool-{{ $resourceSuffix }}"
+
 {{- range $ip := .Data.RecordData.IP }}
-
-    {{- $escapedIPv4 := replaceAll $ip.V4 "." "_"}}
-    {{- $recordResourceName := printf "record_%s_%s" $escapedIPv4 $resourceSuffix }}
-
-    resource "cloudflare_record" "{{ $recordResourceName }}" {
-      provider = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
-      zone_id  = data.cloudflare_zone.cloudflare_zone_{{ $resourceSuffix }}.id
-      name     = "{{ $.Data.Hostname }}"
-      value    = "{{ $ip.V4 }}"
-      type     = "A"
-      ttl      = 300
+  {{- $ip_hash := (sha1sum $ip.V4 | trunc 8) }}
+    origins {
+      name    = "origin-{{ $ip_hash }}"
+      address = "{{ $ip.V4 }}"
+      weight  = 1
     }
 
+  monitor = cloudflare_load_balancer_monitor.monitor_{{ $resourceSuffix }}.id
+
+  origin_steering = {
+    policy = "random"
+  }
+}
 {{- end }}
+
+resource "cloudflare_load_balancer_monitor" "monitor_{{ $resourceSuffix }}" {
+  provider   = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
+  account_id = ""
+  type        = {{ upper "$protocol" }}
+  port        = {{ port }}
+  timeout     = 5
+  retries     = 2
+  interval    = 60
+}
+
+
+resource "cloudflare_load_balancer" "load_balancer_{{ $resourceSuffix }}" {
+  zone_id = data.cloudflare_zone.cloudflare_zone_{{ $resourceSuffix }}.id
+  name    = "{{ $.Data.Hostname }}"
+  fallback_pool = cloudflare_load_balancer_pool.lb_pool_{{ $resourceSuffix }}.id
+
+  default_pools = [
+    cloudflare_load_balancer_pool.lb_pool_{{ $resourceSuffix }}.id,
+  ]
+  ttl     = 30
+}
 
 {{- $clusterID := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
 output "{{ $clusterID }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {

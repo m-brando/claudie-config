@@ -30,7 +30,7 @@ resource "cloudflare_load_balancer_pool" "lb_pool_{{ $resourceSuffix }}" {
   
   monitor = cloudflare_load_balancer_monitor.monitor_{{ $resourceSuffix }}.id
 
-  origin_steering = {
+  origin_steering {
     policy = "random"
   }
 }
@@ -38,7 +38,7 @@ resource "cloudflare_load_balancer_pool" "lb_pool_{{ $resourceSuffix }}" {
 resource "cloudflare_load_balancer_monitor" "monitor_{{ $resourceSuffix }}" {
   provider   = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
   account_id = ""
-  type        = {{ upper "$protocol" }}
+  type        = "{{ $protocol }}"
   port        = {{ $port }}
   timeout     = 5
   retries     = 2
@@ -48,10 +48,10 @@ resource "cloudflare_load_balancer_monitor" "monitor_{{ $resourceSuffix }}" {
 
 resource "cloudflare_load_balancer" "load_balancer_{{ $resourceSuffix }}" {
   zone_id = data.cloudflare_zone.cloudflare_zone_{{ $resourceSuffix }}.id
-  name    = "{{ $.Data.Hostname }}"
-  fallback_pool = cloudflare_load_balancer_pool.lb_pool_{{ $resourceSuffix }}.id
+  name    = "{{ $.Data.Hostname }}.{{ .Data.DNSZone }}"
+  fallback_pool_id = cloudflare_load_balancer_pool.lb_pool_{{ $resourceSuffix }}.id
 
-  default_pools = [
+  default_pool_ids = [
     cloudflare_load_balancer_pool.lb_pool_{{ $resourceSuffix }}.id,
   ]
   ttl     = 30

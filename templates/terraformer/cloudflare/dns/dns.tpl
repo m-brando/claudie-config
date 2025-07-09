@@ -26,14 +26,14 @@ resource "cloudflare_load_balancer_pool" "lb_pool_{{ $resourceSuffix }}" {
       address = "{{ $ip.V4 }}"
       weight  = 1
     }
-
+  {{- end }}
+  
   monitor = cloudflare_load_balancer_monitor.monitor_{{ $resourceSuffix }}.id
 
   origin_steering = {
     policy = "random"
   }
 }
-{{- end }}
 
 resource "cloudflare_load_balancer_monitor" "monitor_{{ $resourceSuffix }}" {
   provider   = cloudflare.cloudflare_dns_{{ $resourceSuffix }}

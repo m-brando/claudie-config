@@ -15,7 +15,7 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
 }
 
 resource "cloudflare_load_balancer_pool" "lb_pool_{{ $resourceSuffix }}" {
-  account_id = ""
+  account_id = "{{ .Data.Provider.GetCloudflare.GetAccountID }}"
   provider  = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
   name      = "pool-{{ $resourceSuffix }}"
 
@@ -36,8 +36,8 @@ resource "cloudflare_load_balancer_pool" "lb_pool_{{ $resourceSuffix }}" {
 }
 
 resource "cloudflare_load_balancer_monitor" "monitor_{{ $resourceSuffix }}" {
-  provider   = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
-  account_id = ""
+  provider    = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
+  account_id  = "{{ .Data.Provider.GetCloudflare.GetAccountID }}"
   type        = "{{ $protocol }}"
   port        = {{ $port }}
   timeout     = 5

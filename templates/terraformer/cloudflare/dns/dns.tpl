@@ -14,7 +14,7 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
   name       = "{{ .Data.DNSZone }}"
 }
 
-{{- if .Data.cloudflareSubscription }}
+{{- if .Data.CloudflareSubscription }}
   resource "cloudflare_load_balancer_pool" "lb_pool_{{ $resourceSuffix }}" {
     provider  = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
     account_id = "{{ .Data.Provider.GetCloudflare.GetAccountID }}"

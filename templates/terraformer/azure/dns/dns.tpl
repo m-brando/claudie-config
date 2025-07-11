@@ -1,6 +1,4 @@
 {{- $hostname          := .Data.Hostname }}
-{{- $protocol          := .Data.Role.Protocol }}
-{{- $port              := .Data.Role.Port }}
 {{- $specName          := .Data.Provider.SpecName }}
 {{- $uniqueFingerPrint := .Fingerprint }}
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
@@ -15,8 +13,8 @@ provider "azurerm" {
 }
 
 data "azurerm_dns_zone" "azure_zone_{{ $resourceSuffix }}" {
-    provider = azurerm.dns_azure_{{ $resourceSuffix }}
-    name     = "{{ .Data.DNSZone }}"
+  provider = azurerm.dns_azure_{{ $resourceSuffix }}
+  name     = "{{ .Data.DNSZone }}"
 }
 
 resource "azurerm_traffic_manager_profile" "traffic_manager_{{ $hostname }}_{{ $resourceSuffix}}" {
@@ -32,15 +30,15 @@ resource "azurerm_traffic_manager_profile" "traffic_manager_{{ $hostname }}_{{ $
   }
 
   monitor_config {
-    protocol = "{{ upper $protocol }}"
-    port     = {{ $port }}
+    protocol = "TCP"
+    port     = 6443
   }
 }
 
 {{- range $ip := .Data.RecordData.IP }}
 {{- $ip_hash := (sha1sum $ip.V4 | trunc 8) }}
 resource "azurerm_traffic_manager_external_endpoint" "endpoint_{{ $hostname }}_{{ $ip_hash }}_{{ $resourceSuffix}}" {
-  provider            = azurerm.dns_azure_{{ $resourceSuffix }}
+  provider             = azurerm.dns_azure_{{ $resourceSuffix }}
   name                 = "{{ $hostname }}_{{ $ip_hash }}_{{ $resourceSuffix}}"
   profile_id           = azurerm_traffic_manager_profile.traffic_manager_{{ $hostname }}_{{ $resourceSuffix}}.id
   weight               = 1
@@ -55,7 +53,7 @@ resource "azurerm_dns_cname_record" "record_{{ $resourceSuffix }}" {
   zone_name           = data.azurerm_dns_zone.azure_zone_{{ $resourceSuffix }}.name
   resource_group_name = data.azurerm_dns_zone.azure_zone_{{ $resourceSuffix }}.resource_group_name
   ttl                 = 300
-  record             = azurerm_traffic_manager_profile.traffic_manager_{{ $hostname }}_{{ $resourceSuffix}}.fqdn
+  record              = azurerm_traffic_manager_profile.traffic_manager_{{ $hostname }}_{{ $resourceSuffix}}.fqdn
 }
 
 {{- $clusterID := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}

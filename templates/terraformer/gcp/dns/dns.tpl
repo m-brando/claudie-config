@@ -1,6 +1,5 @@
 {{- $specName          := .Data.Provider.SpecName }}
 {{- $hostname          := .Data.Hostname }}
-{{- $port              := .Data.Role.Port }}
 {{- $gcpProject        := .Data.Provider.GetGcp.Project }}
 {{- $uniqueFingerPrint := .Fingerprint }}
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
@@ -19,7 +18,7 @@ resource "google_compute_health_check" "gcp_health_check_{{ $resourceSuffix }}" 
   healthy_threshold  = 2
   unhealthy_threshold = 2
   tcp_health_check {
-    port = {{ $port }}
+    port = 6443
   }
   source_regions = ["europe-central2", "us-central1", "asia-northeast1"]
 }

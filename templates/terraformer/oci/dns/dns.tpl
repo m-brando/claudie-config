@@ -1,6 +1,5 @@
 {{- $specName          := .Data.Provider.SpecName }}
 {{- $hostname          := .Data.Hostname }}
-{{- $port              := .Data.Role.Port }}
 {{- $uniqueFingerPrint := .Fingerprint }}
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
 
@@ -25,7 +24,7 @@ resource "oci_health_checks_ping_monitor" "oci_health_checks_{{ $resourceSuffix 
   display_name    = "health-check-{{ $hostname }}"
   interval_in_seconds = 30
   protocol = "TCP"
-  port  = {{ $port }}
+  port  = 6443
   targets = [
     {{- range $ip := .Data.RecordData.IP }}
       "{{ $ip.V4 }}",

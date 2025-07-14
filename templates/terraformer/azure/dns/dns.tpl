@@ -56,7 +56,7 @@ resource "azurerm_dns_cname_record" "record_{{ $hostname }}_{{ $resourceSuffix }
 }
 
 output "{{ $clusterID }}_{{ $resourceSuffix }}" {
-    value = { "{{ .Data.ClusterName }}-{{.Data.ClusterHash }}-endpoint" = format("%s.%s", azurerm_dns_cname_record.record_{{ $hostname }}_{{ $resourceSuffix }}.name, azurerm_dns_cname_record.record_{{ $hostname }}_{{ $resourceSuffix }}.zone_name)}
+    value = { "{{ $clusterID }}-endpoint" = format("%s.%s", azurerm_dns_cname_record.record_{{ $hostname }}_{{ $resourceSuffix }}.name, azurerm_dns_cname_record.record_{{ $hostname }}_{{ $resourceSuffix }}.zone_name)}
 
 }
 
@@ -73,7 +73,7 @@ output "{{ $clusterID }}_{{ $resourceSuffix }}" {
 	}
 
 	output "{{ $clusterID }}_{{ $alternativeName }}_{{ $resourceSuffix }}" {
-    value = { "{{ .Data.ClusterName }}-{{.Data.ClusterHash }}-endpoint" = format("%s.%s", azurerm_dns_cname_record.record_{{ $alternativeName }}_{{ $resourceSuffix }}.name, azurerm_dns_cname_record.record_{{ $alternativeName }}_{{ $resourceSuffix }}.zone_name)}
+    value = { "{{ $clusterID }}-endpoint" = format("%s.%s", azurerm_dns_cname_record.record_{{ $alternativeName }}_{{ $resourceSuffix }}.name, azurerm_dns_cname_record.record_{{ $alternativeName }}_{{ $resourceSuffix }}.zone_name)}
 	}
 
 	{{- end }}

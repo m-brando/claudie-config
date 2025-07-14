@@ -54,5 +54,5 @@ resource "aws_route53_health_check" "hc_{{ $hostname }}_{{ $ip_hash }}_{{ $resou
 {{- end }}
 
 output "{{ $clusterID }}_{{ $resourceSuffix }}" {
-  value = { "{{ $clusterID }}-endpoint" = aws_route53_record.record_{{ $resourceSuffix }}.name }
+  value = { "{{ $clusterID }}-endpoint" = "{{ $hostname }}.${data.aws_route53_zone.aws_zone_{{ $resourceSuffix }}.name}" }
 }

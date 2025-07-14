@@ -5,8 +5,8 @@
 {{- $clusterID 	       := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
 
 {{- if hasExtension .Data "AlternativeNamesExtension" }}
-	{{- range $index, $alternativeName := .Data.AlternativeNamesExtension.Names }}
-    {{- range $ip := $.Data.RecordData.IP }}
+	{{- range $_, $alternativeName := .Data.AlternativeNamesExtension.Names }}
+    {{- range $index,$ip := $.Data.RecordData.IP }}
       resource "aws_route53_record" "record_{{ $alternativeName }}_{{ $index }}_{{ $resourceSuffix }}" {
         provider  = aws.dns_aws_{{ $resourceSuffix }}
         zone_id   = "${data.aws_route53_zone.aws_zone_{{ $resourceSuffix }}.zone_id}"

@@ -55,7 +55,7 @@ resource "azurerm_dns_cname_record" "record_{{ $hostname }}_{{ $resourceSuffix }
   record              = azurerm_traffic_manager_profile.traffic_manager_{{ $hostname }}_{{ $resourceSuffix}}.fqdn
 }
 
-output "{{ $clusterID }}_{{ $hostname }}_{{ $resourceSuffix }}" {
+output "{{ $clusterID }}_{{ $resourceSuffix }}" {
     value = { "{{ $clusterID }}-endpoint" = format("%s.%s", azurerm_dns_cname_record.record_{{ $hostname }}_{{ $resourceSuffix }}.name, azurerm_dns_cname_record.record_{{ $hostname }}_{{ $resourceSuffix }}.zone_name)}
 }
 

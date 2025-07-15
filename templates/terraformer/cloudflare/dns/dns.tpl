@@ -56,25 +56,21 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
   }
   {{- if hasExtension .Data "AlternativeNamesExtension" }}
     {{- range $_, $alternativeName := .Data.AlternativeNamesExtension.Names }}
-      {{- range $ip := $.Data.RecordData.IP }}
-        {{- $escapedIPv4 := replaceAll $ip.V4 "." "_" }}
-        {{- $recordResourceName := printf "record_%s_%s_%s" $alternativeName $escapedIPv4 $resourceSuffix }}
+      {{- $recordResourceName := printf "record_%s_%s" $alternativeName $resourceSuffix }}
 
-        resource "cloudflare_load_balancer" "load_balancer_{{ $recordResourceName }}" {
-          provider    = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
-          zone_id     = data.cloudflare_zone.cloudflare_zone_{{ $resourceSuffix }}.id
-          name        = "{{ $alternativeName }}.{{ $zoneName }}"
-          fallback_pool_id = cloudflare_load_balancer_pool.lb_pool_{{ $resourceSuffix }}.id
+      resource "cloudflare_load_balancer" "load_balancer_{{ $recordResourceName }}" {
+        provider    = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
+        zone_id     = data.cloudflare_zone.cloudflare_zone_{{ $resourceSuffix }}.id
+        name        = "{{ $alternativeName }}.{{ $zoneName }}"
+        fallback_pool_id = cloudflare_load_balancer_pool.lb_pool_{{ $resourceSuffix }}.id
 
-          default_pool_ids = [
-            cloudflare_load_balancer_pool.lb_pool_{{ $resourceSuffix }}.id,
-          ]
-          ttl     = 30
+        default_pool_ids = [
+          cloudflare_load_balancer_pool.lb_pool_{{ $resourceSuffix }}.id,
+        ]
+        ttl     = 30
 
-          steering_policy="random"
-        }
-      {{- end }}
-
+        steering_policy="random"
+      }
     output "{{ $clusterID }}_{{ $alternativeName }}_{{ $resourceSuffix }}" {
       value = { "{{ $clusterID }}-{{ $alternativeName }}-endpoint" = format("%s.%s", "{{ $alternativeName }}", "{{ $.Data.DNSZone }}")}
     }

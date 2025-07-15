@@ -15,9 +15,9 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
 
 {{- if .Data.CloudflareSubscription }}
   resource "cloudflare_load_balancer_pool" "lb_pool_{{ $resourceSuffix }}" {
-    provider  = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
-    account_id = "{{ .Data.Provider.GetCloudflare.GetAccountID }}"
-    name      = "pool-{{ $resourceSuffix }}"
+    provider    = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
+    account_id  = "{{ .Data.Provider.GetCloudflare.GetAccountID }}"
+    name        = "pool-{{ $resourceSuffix }}"
 
     {{- range $index, $ip := .Data.RecordData.IP }}
       origins {
@@ -41,10 +41,10 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
   }
 
   resource "cloudflare_load_balancer" "load_balancer_{{ $resourceSuffix }}" {
-    provider    = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
-    zone_id = data.cloudflare_zone.cloudflare_zone_{{ $resourceSuffix }}.id
-    name    = "{{ $.Data.Hostname }}.{{ .Data.DNSZone }}"
-    fallback_pool_id = cloudflare_load_balancer_pool.lb_pool_{{ $resourceSuffix }}.id
+    provider          = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
+    zone_id           = data.cloudflare_zone.cloudflare_zone_{{ $resourceSuffix }}.id
+    name              = "{{ $.Data.Hostname }}.{{ .Data.DNSZone }}"
+    fallback_pool_id  = cloudflare_load_balancer_pool.lb_pool_{{ $resourceSuffix }}.id
 
     default_pool_ids = [
       cloudflare_load_balancer_pool.lb_pool_{{ $resourceSuffix }}.id,
@@ -61,8 +61,8 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
 
         resource "cloudflare_load_balancer" "load_balancer_{{ $recordResourceName }}" {
           provider    = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
-          zone_id = data.cloudflare_zone.cloudflare_zone_{{ $resourceSuffix }}.id
-          name    = "{{ $alternativeName }}.{{ $.Data.DNSZone }}"
+          zone_id     = data.cloudflare_zone.cloudflare_zone_{{ $resourceSuffix }}.id
+          name        = "{{ $alternativeName }}.{{ $.$.Data.DNSZone }}"
           fallback_pool_id = cloudflare_load_balancer_pool.lb_pool_{{ $resourceSuffix }}.id
 
           default_pool_ids = [

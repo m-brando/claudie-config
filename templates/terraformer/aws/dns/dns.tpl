@@ -34,7 +34,7 @@ data "aws_route53_zone" "aws_zone_{{ $resourceSuffix }}" {
       "{{ $ip.V4 }}",
     ]
 
-    set_identifier = "record_{{ $hostname }}_{{ $index }}_{{ $resourceSuffix }}"
+    set_identifier  = "record_{{ $hostname }}_{{ $index }}_{{ $resourceSuffix }}"
     health_check_id = aws_route53_health_check.hc_{{ $hostname }}_{{ $index }}.id
 
     weighted_routing_policy {
@@ -43,7 +43,7 @@ data "aws_route53_zone" "aws_zone_{{ $resourceSuffix }}" {
   }
 
   resource "aws_route53_health_check" "hc_{{ $hostname }}_{{ $index }}" {
-    provider  = aws.dns_aws_{{ $resourceSuffix }}
+    provider          = aws.dns_aws_{{ $resourceSuffix }}
     port              = 6443
     type              = "TCP"
     request_interval  = 30

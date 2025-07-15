@@ -14,6 +14,9 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
   name       = "{{ .Data.DNSZone }}"
 }
 
+### If subscription has paid addon Cloudflare Load Balancing,
+### implement load balancer with health check, otherwise
+### create A records without load balancer and health check
 {{- if .Data.CloudflareSubscription }}
   resource "cloudflare_load_balancer_pool" "lb_pool_{{ $resourceSuffix }}" {
     provider    = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
@@ -54,6 +57,9 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
 
     steering_policy="random"
   }
+  ### If the input manifest includes alternativeNames,
+  ### create additional load balancers using those names.
+  ### These LBs will use the same pool as the primary domain.
   {{- if hasExtension .Data "AlternativeNamesExtension" }}
     {{- range $_, $alternativeName := .Data.AlternativeNamesExtension.Names }}
       {{- $recordResourceName := printf "record_%s_%s" $alternativeName $resourceSuffix }}
@@ -79,6 +85,8 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
   output "{{ $clusterID }}_{{ $resourceSuffix }}" {
     value = { "{{ $clusterID }}-endpoint" = format("%s.%s", "{{ .Data.Hostname }}", "{{ .Data.DNSZone }}")}
   }
+### If subscription does not include claudflare paied addon
+### for DNS balancing, create DNS A records with no health check
 {{- else }}
   {{- range $ip := .Data.RecordData.IP }}
 

@@ -4,6 +4,8 @@
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
 {{- $clusterID 	       := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
 
+### Alternative Name created as a A record not CNAME. 
+### Utilizing the same health check as primary/domain name
 {{- if hasExtension .Data "AlternativeNamesExtension" }}
 	{{- range $_, $alternativeName := .Data.AlternativeNamesExtension.Names }}
     {{- range $index,$ip := $.Data.RecordData.IP }}

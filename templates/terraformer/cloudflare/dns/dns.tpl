@@ -2,6 +2,7 @@
 {{- $uniqueFingerPrint := .Fingerprint }}
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
 {{- $clusterID         := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
+{{- $zoneName          := .Data.DNSZone }}
 
 provider "cloudflare" {
   api_token = "${file("{{ $specName }}")}"
@@ -62,7 +63,7 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
         resource "cloudflare_load_balancer" "load_balancer_{{ $recordResourceName }}" {
           provider    = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
           zone_id     = data.cloudflare_zone.cloudflare_zone_{{ $resourceSuffix }}.id
-          name        = "{{ $alternativeName }}.{{ $.$.Data.DNSZone }}"
+          name        = "{{ $alternativeName }}.{{ $zoneName }}"
           fallback_pool_id = cloudflare_load_balancer_pool.lb_pool_{{ $resourceSuffix }}.id
 
           default_pool_ids = [

@@ -77,7 +77,6 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
     output "{{ $clusterID }}_{{ $alternativeName }}_{{ $resourceSuffix }}" {
       value = { "{{ $clusterID }}-{{ $alternativeName }}-endpoint" = format("%s.%s", "{{ $alternativeName }}", "{{ $.Data.DNSZone }}")}
     }
-
     {{- end }}
   {{- end }}
   output "{{ $clusterID }}_{{ $resourceSuffix }}" {
@@ -112,14 +111,15 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
           type = "A"
           ttl = 300
         }
-    {{- end }}
+      {{- end }}
 
     output "{{ $clusterID }}_{{ $alternativeName }}_{{ $resourceSuffix }}" {
       value = { "{{ $clusterID }}-{{ $alternativeName }}-endpoint" = format("%s.%s", "{{ $alternativeName }}", "{{ $.Data.DNSZone }}")}
     }
-	{{- end }}
+	  {{- end }}
   
   output "{{ $clusterID }}_{{ $resourceSuffix }}" {
     value = { "{{ $clusterID }}-endpoint" = format("%s.%s", "{{ .Data.Hostname }}", "{{ .Data.DNSZone }}")}
   }
+  {{- end }}
 {{- end }}

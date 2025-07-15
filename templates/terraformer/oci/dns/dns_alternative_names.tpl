@@ -13,7 +13,7 @@
 		}
 
 	output "{{ $clusterID }}_{{ $alternativeName }}_{{ $resourceSuffix }}" {
-	  value = { "{{ $clusterID }}-endpoint" = "{{ $alternativeName }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}" }
+	  value = { "{{ $clusterID }}-{{ $alternativeName }}-endpoint" = "{{ $alternativeName }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}" }
 	}
 	{{- end }}
 {{- end }}

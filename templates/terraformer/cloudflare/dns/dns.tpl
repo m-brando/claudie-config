@@ -61,7 +61,7 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
       resource "cloudflare_load_balancer" "load_balancer_{{ $recordResourceName }}" {
         provider    = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
         zone_id     = data.cloudflare_zone.cloudflare_zone_{{ $resourceSuffix }}.id
-        name        = "{{ $alternativeName }}.{{ $zoneName }}"
+        name        = "{{ $alternativeName }}.{{ $.Data.DNSZone }}"
         fallback_pool_id = cloudflare_load_balancer_pool.lb_pool_{{ $resourceSuffix }}.id
 
         default_pool_ids = [

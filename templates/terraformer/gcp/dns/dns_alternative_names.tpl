@@ -20,7 +20,7 @@
 		wrr {
 		health_checked_targets {
 			external_endpoints = [
-			{{- range $ip := .Data.RecordData.IP }}
+			{{- range $ip := $.Data.RecordData.IP }}
 				"{{ $ip.V4 }}",
 			{{- end }}
 			]

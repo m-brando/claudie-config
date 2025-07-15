@@ -61,7 +61,7 @@
 		}
 
 	output "{{ $clusterID }}_{{ $alternativeName }}_{{ $resourceSuffix }}" {
-	  value = { "{{ $clusterID }}-{{ $alternativeName }}-endpoint" = oci_dns_rrset.record_{{ $alternativeName }}_{{ $resourceSuffix }}.domain }
+	  value = { "{{ $clusterID }}-endpoint" = "{{ $alternativeName }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}" }
 	}
 	{{- end }}
 {{- end }}

@@ -92,5 +92,5 @@ resource "oci_dns_steering_policy_attachment" "dns_steering_policy_attachment_{{
 }
 
 output "{{ $clusterID }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
-  value = { "{{ .Data.ClusterName }}-{{ .Data.ClusterHash }}-endpoint" = "{{ $hostname }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}" }
+  value = { "{{ $clusterID }}-endpoint" = "{{ $hostname }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}" }
 }

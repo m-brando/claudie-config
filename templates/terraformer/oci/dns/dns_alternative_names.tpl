@@ -4,6 +4,8 @@
 {{- $clusterID 	       := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
 
 {{- if hasExtension .Data "AlternativeNamesExtension" }}
+	{{- range $_, $alternativeName := .Data.AlternativeNamesExtension.Names }}
+
 	resource "oci_dns_rrset" "record_{{ $alternativeName }}_{{ $resourceSuffix }}" {
 	   provider        = oci.dns_oci_{{ $resourceSuffix }}
 	   domain          = "{{ $alternativeName }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"
@@ -17,4 +19,5 @@
 	output "{{ $clusterID }}_{{ $alternativeName }}_{{ $resourceSuffix }}" {
 	  value = { "{{ $clusterID }}-{{ $alternativeName }}-endpoint" = oci_dns_rrset.record_{{ $alternativeName }}_{{ $resourceSuffix }}.domain }
 	}
+	{{- end }}
 {{- end }}

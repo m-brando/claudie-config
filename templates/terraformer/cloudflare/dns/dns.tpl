@@ -17,7 +17,7 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
 ### implement load balancer with health check, otherwise
 ### create A records without load balancer and health check
 {{- if hasExtension .Data "ProviderExtrasExtension" }}
-  {{- if .Data.ProviderExtrasExtension.SubscriptionAllowsHA }}
+  {{- if $.Data.ProviderExtrasExtension.SubscriptionAllowsHA }}
   resource "cloudflare_load_balancer_pool" "lb_pool_{{ $resourceSuffix }}" {
     provider    = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
     account_id  = "{{ .Data.Provider.GetCloudflare.GetAccountID }}"

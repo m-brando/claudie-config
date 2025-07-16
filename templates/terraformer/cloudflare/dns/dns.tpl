@@ -18,7 +18,7 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
 ### implement load balancer with health check, otherwise
 ### create A records without load balancer and health check
 {{- if hasExtension .Data "ProviderExtrasExtension" }}
-{{- if .Data.ProviderExtrasExtension.SubscriptionAllowsHA }}
+  {{- if .Data.ProviderExtrasExtension.SubscriptionAllowsHA }}
   resource "cloudflare_load_balancer_pool" "lb_pool_{{ $resourceSuffix }}" {
     provider    = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
     account_id  = "{{ .Data.Provider.GetCloudflare.GetAccountID }}"
@@ -86,6 +86,7 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
   output "{{ $clusterID }}_{{ $resourceSuffix }}" {
     value = { "{{ $clusterID }}-endpoint" = format("%s.%s", "{{ .Data.Hostname }}", "{{ .Data.DNSZone }}")}
   }
+  {{- end }}
 ### If subscription does not include claudflare paied addon
 ### for DNS balancing, create DNS A records with no health check
 {{- else }}

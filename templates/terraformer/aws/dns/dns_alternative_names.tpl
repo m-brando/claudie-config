@@ -15,6 +15,9 @@
       records     = ["{{ $hostname }}.${data.aws_route53_zone.aws_zone_{{ $resourceSuffix }}.name}"]
 
       set_identifier = "record_{{ $alternativeName }}_{{ $resourceSuffix }}"
+      weighted_routing_policy {
+        weight = 1
+      }
     }
 
 	output "{{ $clusterID }}_{{ $alternativeName }}_{{ $resourceSuffix }}" {

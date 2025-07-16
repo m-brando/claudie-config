@@ -15,7 +15,7 @@
 	  ttl  = 300
 
 	  managed_zone = data.google_dns_managed_zone.gcp_zone_{{ $resourceSuffix }}.name
-	  rrdatas = ["{{ $alternativeName }}"]
+	  rrdatas = ["{{ $alternativeName }}.${data.google_dns_managed_zone.gcp_zone_{{ $resourceSuffix }}.dns_name}"]
 
 	}
 

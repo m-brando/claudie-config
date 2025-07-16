@@ -10,12 +10,12 @@
 	resource "google_dns_record_set" "record_{{ $alternativeName }}_{{ $resourceSuffix }}" {
 	  provider = google.dns_gcp_{{ $resourceSuffix }}
 
-	  name = "{{ $hostname }}.${data.google_dns_managed_zone.gcp_zone_{{ $resourceSuffix }}.dns_name}"
+	  name = "{{ $alternativeName }}.${data.google_dns_managed_zone.gcp_zone_{{ $resourceSuffix }}.dns_name}"
 	  type = "CNAME"
 	  ttl  = 300
 
 	  managed_zone = data.google_dns_managed_zone.gcp_zone_{{ $resourceSuffix }}.name
-	  rrdatas = ["{{ $alternativeName }}.${data.google_dns_managed_zone.gcp_zone_{{ $resourceSuffix }}.dns_name}"]
+	  rrdatas = ["{{ $hostname }}.${data.google_dns_managed_zone.gcp_zone_{{ $resourceSuffix }}.dns_name}"]
 
 	}
 

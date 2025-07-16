@@ -14,10 +14,10 @@
 		zone_name_or_id = data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name
 
 		items {
-    		domain = "{{ $alternativeName }}.${data.oci_dns_zones.oci_zone_oci_8c4424dfe74de25fa9bc757883faf774.name}"
+    		domain = "{{ $alternativeName }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"
 			rtype  = "CNAME"
 			ttl    = 300
-			rdata  = "{{ $hostname }}.${data.oci_dns_zones.oci_zone_oci_8c4424dfe74de25fa9bc757883faf774.name}"
+			rdata  = "{{ $hostname }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"
   		}
 	}
 	output "{{ $clusterID }}_{{ $alternativeName }}_{{ $resourceSuffix }}" {

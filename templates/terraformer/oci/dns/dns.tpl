@@ -20,9 +20,9 @@ data "oci_dns_zones" "oci_zone_{{ $resourceSuffix }}" {
 }
 
 resource "oci_health_checks_ping_monitor" "oci_health_checks_{{ $resourceSuffix }}" {
-  provider        = oci.dns_oci_{{ $resourceSuffix }}
-  compartment_id  = "{{ .Data.Provider.GetOci.CompartmentOCID }}"
-  display_name    = "health-check-{{ $hostname }}"
+  provider            = oci.dns_oci_{{ $resourceSuffix }}
+  compartment_id      = "{{ .Data.Provider.GetOci.CompartmentOCID }}"
+  display_name        = "health-check-{{ $hostname }}"
   interval_in_seconds = 30
   protocol = "TCP"
   port  = 6443
@@ -34,11 +34,11 @@ resource "oci_health_checks_ping_monitor" "oci_health_checks_{{ $resourceSuffix 
 }
 
 resource "oci_dns_steering_policy" "oci_steering_policy_{{ $resourceSuffix }}" {
-  provider        = oci.dns_oci_{{ $resourceSuffix }}
-  compartment_id  = "{{ .Data.Provider.GetOci.CompartmentOCID }}"
-  display_name    = "{{ $hostname }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"
-  template        = "LOAD_BALANCE"
-  ttl             = 300
+  provider                = oci.dns_oci_{{ $resourceSuffix }}
+  compartment_id          = "{{ .Data.Provider.GetOci.CompartmentOCID }}"
+  display_name            = "{{ $hostname }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"
+  template                = "LOAD_BALANCE"
+  ttl                     = 300
   health_check_monitor_id = oci_health_checks_ping_monitor.oci_health_checks_{{ $resourceSuffix }}.id
 
   {{- range $ip := .Data.RecordData.IP }}
@@ -80,17 +80,17 @@ resource "oci_dns_steering_policy" "oci_steering_policy_{{ $resourceSuffix }}" {
 }
 
 locals {
-  matching_zone = [for z in data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.zones : z if z.name == "${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"][0]
+  matching_zone_{{ $resourceSuffix }} = [for z in data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.zones : z if z.name == "${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"][0]
 }
 
 resource "oci_dns_steering_policy_attachment" "dns_steering_policy_attachment_{{ $resourceSuffix }}" {
   provider        = oci.dns_oci_{{ $resourceSuffix }}
 	domain_name = "{{ $hostname }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"
 	steering_policy_id = oci_dns_steering_policy.oci_steering_policy_{{ $resourceSuffix }}.id
-	zone_id = local.matching_zone.id
+	zone_id = local.matching_zone_{{ $resourceSuffix }}.id
 
 }
 
-output "{{ $clusterID }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
+output "{{ $clusterID }}_{{ $resourceSuffix }}" {
   value = { "{{ $clusterID }}-endpoint" = "{{ $hostname }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}" }
 }

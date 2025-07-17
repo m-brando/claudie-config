@@ -5,7 +5,6 @@
 
 {{- if hasExtension .Data "AlternativeNamesExtension" }}
 	{{- range $_, $alternativeName := .Data.AlternativeNamesExtension.Names }}
-
     {{- $recordResourceName := printf "record_%s_%s" $alternativeName $resourceSuffix }}
 
     resource "cloudflare_record" "{{ $recordResourceName }}" {
@@ -20,6 +19,5 @@
 	output "{{ $clusterID }}_{{ $alternativeName }}_{{ $resourceSuffix }}" {
 	  value = { "{{ $clusterID }}-{{ $alternativeName }}-endpoint" = format("%s.%s", "{{ $alternativeName }}", "{{ $.Data.DNSZone }}")}
 	}
-
 	{{- end }}
 {{- end }}

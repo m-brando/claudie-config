@@ -36,10 +36,11 @@ resource "azurerm_traffic_manager_profile" "traffic_manager_{{ $hostname }}_{{ $
   }
 }
 
-{{- range $index, $ip := .Data.RecordData.IP }}
-  resource "azurerm_traffic_manager_external_endpoint" "endpoint_{{ $hostname }}_{{ $index }}_{{ $resourceSuffix}}" {
+{{- range $_, $ip := .Data.RecordData.IP }}
+  {{- $escapedIPv4 := replaceAll $ip.V4 "." "_" }}
+  resource "azurerm_traffic_manager_external_endpoint" "endpoint_{{ $hostname }}_{{ $escapedIPv4 }}_{{ $resourceSuffix}}" {
     provider             = azurerm.dns_azure_{{ $resourceSuffix }}
-    name                 = "{{ $hostname }}_{{ $index }}_{{ $resourceSuffix}}"
+    name                 = "{{ $hostname }}_{{ $escapedIPv4 }}_{{ $resourceSuffix}}"
     profile_id           = azurerm_traffic_manager_profile.traffic_manager_{{ $hostname }}_{{ $resourceSuffix}}.id
     weight               = 1
     target               = "{{ $ip.V4 }}"

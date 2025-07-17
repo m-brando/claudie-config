@@ -16,16 +16,16 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
 ### If subscription has paid addon Cloudflare Load Balancing,
 ### implement load balancer with health check, otherwise
 ### create A records without load balancer and health check
-{{- if hasExtension .Data "ProviderExtrasExtension" }}
-  {{- if $.Data.ProviderExtrasExtension.SubscriptionAllowsHA }}
+{{- if and (hasExtension .Data "ProviderExtrasExtension") (.Data.ProviderExtrasExtension.SubscriptionAllowsHA ) }}
   resource "cloudflare_load_balancer_pool" "lb_pool_{{ $resourceSuffix }}" {
     provider    = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
     account_id  = "{{ .Data.Provider.GetCloudflare.GetAccountID }}"
     name        = "pool-{{ $resourceSuffix }}"
 
     {{- range $index, $ip := .Data.RecordData.IP }}
+      {{- $escapedIPv4 := replaceAll $ip.V4 "." "_" }}
       origins {
-        name    = "origin-{{ $index }}"
+        name    = "origin-{{ $escapedIPv4 }}"
         address = "{{ $ip.V4 }}"
         weight  = 1
       }
@@ -62,7 +62,7 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
   }
 ### If subscription does not include claudflare paid addon
 ### for DNS balancing, create DNS A records with no health check
-  {{- else }}
+{{- else }}
   {{- range $ip := .Data.RecordData.IP }}
     {{- $escapedIPv4 := replaceAll $ip.V4 "." "_"}}
     {{- $recordResourceName := printf "record_%s_%s" $escapedIPv4 $resourceSuffix }}

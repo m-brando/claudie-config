@@ -79,5 +79,4 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
   output "{{ $clusterID }}_{{ $resourceSuffix }}" {
     value = { "{{ $clusterID }}-endpoint" = format("%s.%s", "{{ .Data.Hostname }}", "{{ .Data.DNSZone }}")}
   }
-  {{- end }}
 {{- end }}

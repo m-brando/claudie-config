@@ -1,4 +1,5 @@
 {{- $specName          := .Data.Provider.SpecName }}
+{{- $hostname          := .Data.Hostname }}
 {{- $uniqueFingerPrint := .Fingerprint }}
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
 {{- $clusterID 	       := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
@@ -10,22 +11,16 @@
 	  provider = google.dns_gcp_{{ $resourceSuffix }}
 
 	  name = "{{ $alternativeName }}.${data.google_dns_managed_zone.gcp_zone_{{ $resourceSuffix }}.dns_name}"
-	  type = "A"
+	  type = "CNAME"
 	  ttl  = 300
 
 	  managed_zone = data.google_dns_managed_zone.gcp_zone_{{ $resourceSuffix }}.name
-
-	  rrdatas = [
-	      {{- range $ip := $.Data.RecordData.IP }}
-		  "{{ $ip.V4 }}",
-	      {{- end }}
-	    ]
+	  rrdatas = ["{{ $hostname }}.${data.google_dns_managed_zone.gcp_zone_{{ $resourceSuffix }}.dns_name}"]
 
 	}
 
 	output "{{ $clusterID }}_{{ $alternativeName }}_{{ $resourceSuffix }}" {
 	  value = { "{{ $clusterID }}-{{ $alternativeName }}-endpoint" = google_dns_record_set.record_{{ $alternativeName }}_{{ $resourceSuffix }}.name }
 	}
-
 	{{- end }}
 {{- end }}

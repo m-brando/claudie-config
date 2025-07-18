@@ -22,7 +22,7 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
     account_id  = "{{ .Data.Provider.GetCloudflare.GetAccountID }}"
     name        = "pool-{{ $resourceSuffix }}"
 
-    {{- range $index, $ip := .Data.RecordData.IP }}
+    {{- range $_, $ip := .Data.RecordData.IP }}
       {{- $escapedIPv4 := replaceAll $ip.V4 "." "_" }}
       origins {
         name    = "origin-{{ $escapedIPv4 }}"

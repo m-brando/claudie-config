@@ -67,7 +67,7 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
     {{- $escapedIPv4 := replaceAll $ip.V4 "." "_"}}
     {{- $recordResourceName := printf "record_%s_%s" $escapedIPv4 $resourceSuffix }}
 
-    resource "cloudflare_record" "{{ $recordResourceName }}" {
+    resource "cloudflare_dns_record" "{{ $recordResourceName }}" {
       provider = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
       zone_id  = data.cloudflare_zone.cloudflare_zone_{{ $resourceSuffix }}.id
       name     = "{{ $.Data.Hostname }}"

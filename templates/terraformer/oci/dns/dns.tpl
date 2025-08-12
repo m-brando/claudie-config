@@ -22,7 +22,7 @@ data "oci_dns_zones" "oci_zone_{{ $resourceSuffix }}" {
 resource "oci_health_checks_ping_monitor" "oci_health_checks_{{ $resourceSuffix }}" {
   provider            = oci.dns_oci_{{ $resourceSuffix }}
   compartment_id      = "{{ .Data.Provider.GetOci.CompartmentOCID }}"
-  display_name        = "health-check-{{ $hostname }}-{{ $clusterID }}"
+  display_name        = "health-check-{{ $hostname }}-{{ $clusterID }}-{{ uniqueFingerPrint }}"
   interval_in_seconds = 30
   protocol = "TCP"
   # Claudie creates a default role for loadbalancers which acts as a healthcheck, that is open on port 65534

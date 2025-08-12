@@ -37,7 +37,7 @@ resource "oci_health_checks_ping_monitor" "oci_health_checks_{{ $resourceSuffix 
 resource "oci_dns_steering_policy" "oci_steering_policy_{{ $resourceSuffix }}" {
   provider                = oci.dns_oci_{{ $resourceSuffix }}
   compartment_id          = "{{ .Data.Provider.GetOci.CompartmentOCID }}"
-  display_name            = "{{ $hostname }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"
+  display_name            = "{{ $hostname }}-{{ $clusterID }}-{{ $uniqueFingerPrint }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"
   template                = "LOAD_BALANCE"
   ttl                     = 300
   health_check_monitor_id = oci_health_checks_ping_monitor.oci_health_checks_{{ $resourceSuffix }}.id

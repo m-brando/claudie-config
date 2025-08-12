@@ -13,7 +13,9 @@ provider "google" {
 
 resource "google_compute_health_check" "gcp_health_check_{{ $resourceSuffix }}" {
   provider = google.dns_gcp_{{ $resourceSuffix }}
-  name               = "trunc 60 health-check-{{ $hostname }}-{{ $clusterID }}-{{ $uniqueFingerPrint }}"
+  {{- $name := printf "health-check-%s-%s-%s" $hostname $clusterID $uniqueFingerPrint -}}
+  {{- $truncatedName := trunc 60 $name -}} 
+  name               = "{{ $truncatedName }}"
   check_interval_sec = 30
   timeout_sec        = 5
   healthy_threshold  = 2

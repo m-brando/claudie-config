@@ -26,7 +26,7 @@ resource "azurerm_traffic_manager_profile" "traffic_manager_{{ $hostname }}_{{ $
   traffic_routing_method = "Weighted"
 
   dns_config {
-    relative_name = "{{ $hostname }}"
+    relative_name = "{{ $hostname }}-{{ $clusterID }}"
     ttl           = 30
   }
 

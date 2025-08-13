@@ -2,6 +2,8 @@
 {{- $uniqueFingerPrint := .Fingerprint }}
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
 {{- $clusterID         := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
+{{- $sha256Input       := printf "pool-name-%s-%s-%s" $hostname $clusterID $uniqueFingerPrint }}
+{{- $poolName          := printf "pn%s%s" .Data.ClusterHash sha256sum $sha256Input }}
 
 provider "cloudflare" {
   api_token = "${file("{{ $specName }}")}"
@@ -20,7 +22,7 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
   resource "cloudflare_load_balancer_pool" "lb_pool_{{ $resourceSuffix }}" {
     provider    = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
     account_id  = "{{ .Data.Provider.GetCloudflare.GetAccountID }}"
-    name        = "pool-{{ $clusterID }}-{{ $uniqueFingerPrint }}"
+    name        = "pool-{{ $poolName }}"
 
     {{- range $_, $ip := .Data.RecordData.IP }}
       {{- $escapedIPv4 := replaceAll $ip.V4 "." "_" }}

@@ -3,9 +3,8 @@
 {{- $gcpProject        := .Data.Provider.GetGcp.Project }}
 {{- $uniqueFingerPrint := .Fingerprint }}
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
-{{- $clusterID         := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
-{{- $healthCheckName   := printf "health-check-%s-%s-%s" $hostname $clusterID $uniqueFingerPrint -}}
-{{- $truncatedHealthCheckName := trunc 60 $healthCheckName -}} 
+{{- $sha256Input       := printf "health-check-%s-%s-%s" $hostname $clusterID $uniqueFingerPrint }}
+{{- $healthCheckName   := printf "hc%s%s" .Data.ClusterHash sha256sum $sha256Input }}
 
 provider "google" {
     credentials = "${file("{{ $specName }}")}"
@@ -15,7 +14,7 @@ provider "google" {
 
 resource "google_compute_health_check" "gcp_health_check_{{ $resourceSuffix }}" {
   provider = google.dns_gcp_{{ $resourceSuffix }}
-  name               = "{{ $truncatedHealthCheckName }}"
+  name               = "{{ $healthCheckName }}"
   check_interval_sec = 30
   timeout_sec        = 5
   healthy_threshold  = 2

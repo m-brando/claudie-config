@@ -3,6 +3,8 @@
 {{- $uniqueFingerPrint := .Fingerprint }}
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
 {{- $clusterID         := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
+{{- $sha256Input       := printf "traffic-manager-%s-%s-%s" $hostname $clusterID $uniqueFingerPrint }}
+{{- $trafficManagerName := printf "tm%s%s" .Data.ClusterHash sha256sum $sha256Input }}
 
 provider "azurerm" {
   features {}
@@ -20,13 +22,13 @@ data "azurerm_dns_zone" "azure_zone_{{ $resourceSuffix }}" {
 
 resource "azurerm_traffic_manager_profile" "traffic_manager_{{ $hostname }}_{{ $resourceSuffix}}" {
   provider            = azurerm.dns_azure_{{ $resourceSuffix }}
-  name                = "traffic-manager-{{ $hostname }}-{{ $clusterID }}-{{ $uniqueFingerPrint }}""
+  name                = "traffic-manager-{{ $trafficManagerName }}""
   resource_group_name = data.azurerm_dns_zone.azure_zone_{{ $resourceSuffix }}.resource_group_name
 
   traffic_routing_method = "Weighted"
 
   dns_config {
-    relative_name = "{{ $hostname }}-{{ $clusterID }}-{{ $uniqueFingerPrint }}"
+    relative_name = "{{ $trafficManagerName }}"
     ttl           = 30
   }
 

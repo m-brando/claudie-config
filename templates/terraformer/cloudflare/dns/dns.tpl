@@ -20,7 +20,7 @@ data "cloudflare_zone" "cloudflare_zone_{{ $resourceSuffix }}" {
   resource "cloudflare_load_balancer_pool" "lb_pool_{{ $resourceSuffix }}" {
     provider    = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
     account_id  = "{{ .Data.Provider.GetCloudflare.GetAccountID }}"
-    name        = "pool-{{ $resourceSuffix }}"
+    name        = "pool-{{ $$clusterID }}-{{ $uniqueFingerPrint }}"
 
     {{- range $_, $ip := .Data.RecordData.IP }}
       {{- $escapedIPv4 := replaceAll $ip.V4 "." "_" }}

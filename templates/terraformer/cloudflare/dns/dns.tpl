@@ -4,7 +4,8 @@
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
 {{- $clusterID         := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
 {{- $sha256Input       := printf "pool-name-%s-%s-%s" $hostname $clusterID $uniqueFingerPrint }}
-{{- $poolName          := printf "pn%s%s" .Data.ClusterHash sha256sum $sha256Input }}
+{{- $sha256Hash        := sha256sum $sha256Input }}
+{{- $poolName          := printf "pn%s%s" .Data.ClusterHash $sha256Hash }}
 
 provider "cloudflare" {
   api_token = "${file("{{ $specName }}")}"

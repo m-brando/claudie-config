@@ -4,7 +4,8 @@
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
 {{- $clusterID         := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
 {{- $sha256Input       := printf "health-check-%s-%s-%s" $hostname $clusterID $uniqueFingerPrint }}
-{{- $healthCheckName   := printf "hc%s%s" .Data.ClusterHash sha256sum $sha256Input }}
+{{- $sha256Hash        := sha256sum $sha256Input }}
+{{- $healthCheckName   := printf "hc%s%s" .Data.ClusterHash $sha256Hash }}
 
 provider "oci" {
   tenancy_ocid      = "{{ .Data.Provider.GetOci.TenancyOCID }}"
@@ -39,7 +40,7 @@ resource "oci_health_checks_ping_monitor" "oci_health_checks_{{ $resourceSuffix 
 resource "oci_dns_steering_policy" "oci_steering_policy_{{ $resourceSuffix }}" {
   provider                = oci.dns_oci_{{ $resourceSuffix }}
   compartment_id          = "{{ .Data.Provider.GetOci.CompartmentOCID }}"
-  display_name            = "{{ $hostname }}-{{ $clusterID }}-{{ $uniqueFingerPrint }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"
+  display_name            = "{{ $healthCheckName }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"
   template                = "LOAD_BALANCE"
   ttl                     = 300
   health_check_monitor_id = oci_health_checks_ping_monitor.oci_health_checks_{{ $resourceSuffix }}.id

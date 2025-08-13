@@ -5,7 +5,8 @@
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
 {{- $clusterID         := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
 {{- $sha256Input       := printf "health-check-%s-%s-%s" $hostname $clusterID $uniqueFingerPrint }}
-{{- $healthCheckName   := printf "hc%s%s" .Data.ClusterHash sha256sum $sha256Input }}
+{{- $sha256Hash        := sha256sum $sha256Input }}
+{{- $healthCheckName   := printf "hc%s%s" .Data.ClusterHash $sha256Hash }}
 
 provider "google" {
     credentials = "${file("{{ $specName }}")}"

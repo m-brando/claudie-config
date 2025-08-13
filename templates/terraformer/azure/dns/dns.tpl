@@ -4,7 +4,8 @@
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
 {{- $clusterID         := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
 {{- $sha256Input       := printf "traffic-manager-%s-%s-%s" $hostname $clusterID $uniqueFingerPrint }}
-{{- $trafficManagerName := printf "tm%s%s" .Data.ClusterHash sha256sum $sha256Input }}
+{{- $sha256Hash        := sha256sum $sha256Input }}
+{{- $trafficManagerName := printf "tm%s%s" .Data.ClusterHash $sha256Hash }}
 
 provider "azurerm" {
   features {}

@@ -3,6 +3,7 @@
 {{- $gcpProject        := .Data.Provider.GetGcp.Project }}
 {{- $uniqueFingerPrint := .Fingerprint }}
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
+{{- $clusterID         := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
 {{- $sha256Input       := printf "health-check-%s-%s-%s" $hostname $clusterID $uniqueFingerPrint }}
 {{- $healthCheckName   := printf "hc%s%s" .Data.ClusterHash sha256sum $sha256Input }}
 

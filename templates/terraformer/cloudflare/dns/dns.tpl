@@ -1,3 +1,4 @@
+{{- $hostname          := .Data.Hostname }}
 {{- $specName          := .Data.Provider.SpecName }}
 {{- $uniqueFingerPrint := .Fingerprint }}
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}

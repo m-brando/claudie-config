@@ -5,7 +5,7 @@
 {{- $clusterID         := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
 {{- $sha256Input       := printf "traffic-manager-%s-%s-%s" $hostname $clusterID $uniqueFingerPrint }}
 {{- $sha256Hash        := trunc 58 (sha256sum $sha256Input) }}
-{{- $trafficManagerName := printf "tm%s%s" $sha256Hash }}
+{{- $trafficManagerName := printf "tm%s" $sha256Hash }}
 
 provider "azurerm" {
   features {}

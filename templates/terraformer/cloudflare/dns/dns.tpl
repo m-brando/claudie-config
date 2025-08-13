@@ -5,7 +5,7 @@
 {{- $clusterID         := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
 {{- $sha256Input       := printf "pool-name-%s-%s-%s" $hostname $clusterID $uniqueFingerPrint }}
 {{- $sha256Hash        := trunc 58 (sha256sum $sha256Input) }}
-{{- $poolName          := printf "pn%s%s" $sha256Hash }}
+{{- $poolName          := printf "pn%s" $sha256Hash }}
 
 provider "cloudflare" {
   api_token = "${file("{{ $specName }}")}"

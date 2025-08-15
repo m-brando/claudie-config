@@ -3,6 +3,9 @@
 {{- $uniqueFingerPrint := .Fingerprint }}
 {{- $resourceSuffix    := printf "%s_%s" $specName $uniqueFingerPrint }}
 {{- $clusterID         := printf "%s-%s" .Data.ClusterName .Data.ClusterHash }}
+{{- $sha256Input       := printf "health-check-%s-%s-%s" $hostname $clusterID $uniqueFingerPrint }}
+{{- $sha256Hash        := trunc 58 (sha256sum $sha256Input) }}
+{{- $healthCheckName   := printf "hc%s" $sha256Hash }}
 
 provider "oci" {
   tenancy_ocid      = "{{ .Data.Provider.GetOci.TenancyOCID }}"
@@ -22,7 +25,7 @@ data "oci_dns_zones" "oci_zone_{{ $resourceSuffix }}" {
 resource "oci_health_checks_ping_monitor" "oci_health_checks_{{ $resourceSuffix }}" {
   provider            = oci.dns_oci_{{ $resourceSuffix }}
   compartment_id      = "{{ .Data.Provider.GetOci.CompartmentOCID }}"
-  display_name        = "health-check-{{ $hostname }}"
+  display_name        = "{{ $healthCheckName }}"
   interval_in_seconds = 30
   protocol = "TCP"
   # Claudie creates a default role for loadbalancers which acts as a healthcheck, that is open on port 65534
@@ -37,7 +40,7 @@ resource "oci_health_checks_ping_monitor" "oci_health_checks_{{ $resourceSuffix 
 resource "oci_dns_steering_policy" "oci_steering_policy_{{ $resourceSuffix }}" {
   provider                = oci.dns_oci_{{ $resourceSuffix }}
   compartment_id          = "{{ .Data.Provider.GetOci.CompartmentOCID }}"
-  display_name            = "{{ $hostname }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"
+  display_name            = "{{ $healthCheckName }}.${data.oci_dns_zones.oci_zone_{{ $resourceSuffix }}.name}"
   template                = "LOAD_BALANCE"
   ttl                     = 300
   health_check_monitor_id = oci_health_checks_ping_monitor.oci_health_checks_{{ $resourceSuffix }}.id

@@ -8,7 +8,7 @@
 provider "openstack" {
     auth_url                      = "{{ $.Data.Provider.GetOpenstack.AuthURL }}"
     application_credential_id     = "{{ $.Data.Provider.GetOpenstack.ApplicationCredentialID }}"
-    application_credential_secret = "{{ $.Data.Provider.GetOpenstack.KeyFingerprint }}"
+    application_credential_secret = "{{ $.Data.Provider.GetOpenstack.ApplicationCredentialSecret }}"
     region                        = "{{ $region }}"
     alias                         = "nodepool_{{ $resourceSuffix }}"
 }

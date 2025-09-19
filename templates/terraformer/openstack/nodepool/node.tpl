@@ -41,7 +41,7 @@
       }
 
       tags = [
-        "managed-by:Claudie"
+        "managed-by:Claudie",
         "claudie-cluster:{{ $clusterName }}-{{ $clusterHash }}"
       ]
     }
@@ -54,7 +54,7 @@
       pool = "Ext-Net"
 
       tags = [
-        "managed-by:Claudie"
+        "managed-by:Claudie",
         "claudie-cluster:{{ $clusterName }}-{{ $clusterHash }}"
       ]
     }
@@ -63,6 +63,7 @@
     {{- $vmNetworkPortName       := printf "vm-port-%s-%s" $node.Name $resourceSuffix }}
 
     data "openstack_networking_port_v2" "{{ $vmNetworkPort }}" {
+      provider   = openstack.nodepool_{{ $resourceSuffix }}
       name = "{ $vmNetworkPortName }"
       device_id  = openstack_compute_instance_v2.{{ $serverResourceName }}.id
       network_id = openstack_compute_instance_v2.{{ $serverResourceName }}.network.1.uuid
@@ -71,6 +72,7 @@
     {{- $fipAssociateName  := printf "fip_associate_%s_%s" $node.Name $resourceSuffix }}
 
     resource "openstack_networking_floatingip_associate_v2" "{{ $fipAssociateName }}" {
+      provider   = openstack.nodepool_{{ $resourceSuffix }}
       floating_ip = openstack_networking_floatingip_v2.{{ $fipResourceName }}.address
       port_id     = data.openstack_networking_port_v2.{{ $vmNetworkPort }}.id
     }
@@ -80,7 +82,7 @@
         {{- range $node := $nodepool.Nodes }}
             {{- $serverResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
             {{- $fipResourceName  := printf "fip_%s_%s" $node.Name $resourceSuffix }}
-            "${openstack_compute_instance_v2.{{ $serverResourceName }}.name}" = openstack_networking_floatingip_associate_v2.{{ $fipResourceName }}.floating_ip
+            "${openstack_compute_instance_v2.{{ $serverResourceName }}.name}" = openstack_networking_floatingip_associate_v2.{{ $fipAssociateName }}.floating_ip
         {{- end }}
       }
     }

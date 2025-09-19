@@ -19,7 +19,7 @@
     name = "{{ $privateNetResourceName }}"
 
     tags = [
-      "managed-by:Claudie"
+      "managed-by:Claudie",
       "claudie-cluster:{{ $clusterName }}-{{ $clusterHash }}"
     ]
   }
@@ -35,7 +35,7 @@
     gateway_ip      = "10.0.1.1"
 
     tags = [
-      "managed-by:Claudie"
+      "managed-by:Claudie",
       "claudie-cluster:{{ $clusterName }}-{{ $clusterHash }}"
     ]
   }
@@ -49,7 +49,7 @@
     external_network_id = "6c928965-47ea-463f-acc8-6d4a152e9745"
 
     tags = [
-      "managed-by:Claudie"
+      "managed-by:Claudie",
       "claudie-cluster:{{ $clusterName }}-{{ $clusterHash }}"
     ]
   }

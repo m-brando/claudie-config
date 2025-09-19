@@ -21,39 +21,68 @@
 
   {{- range $node := $nodepool.Nodes }}
 
-  {{- $serverResourceName           := printf "%s_%s" $node.Name $resourceSuffix }}
-  {{- $networkResourceName          := printf "network_%s" $resourceSuffix }}
-  {{- $volumeResourceName           := printf "volume_%s" $resourceSuffix }}
+    {{- $serverResourceName           := printf "%s_%s" $node.Name $resourceSuffix }}
+    {{- $networkResourceName          := printf "network_%s" $resourceSuffix }}
+    {{- $volumeResourceName           := printf "volume_%s_%s" $node.Name $resourceSuffix }}
 
-  resource "openstack_compute_instance_v2" "{{ $serverResourceName }}"  {
-    provider          = openstack.nodepool_{{ $resourceSuffix }}
-    name              = "{{ $node.Name }}"
-    image_id          = "{{ $nodepool.Details.Image }}"
-    flavor_name       = "{{ $nodepool.Details.ServerType }}"
-    availability_zone = "{{ $nodepool.Details.Zone }}"
-    key_pair          = openstack_compute_keypair_v2.{{ $keypairResourceName }}.id
+    resource "openstack_compute_instance_v2" "{{ $serverResourceName }}"  {
+      provider          = openstack.nodepool_{{ $resourceSuffix }}
+      name              = "{{ $node.Name }}"
+      image_id          = "{{ $nodepool.Details.Image }}"
+      flavor_name       = "{{ $nodepool.Details.ServerType }}"
+      availability_zone = "{{ $nodepool.Details.Zone }}"
+      key_pair          = openstack_compute_keypair_v2.{{ $keypairResourceName }}.id
+      
+      #need to change to our custom. waiting to quota increase ticket get resolved
+      security_groups = ["default"]
+
+      network {
+        uuid = openstack_networking_network_v2.{{ $networkResourceName }}.id
+      }
+
+      tags = [
+        "managed-by:Claudie"
+        "claudie-cluster:{{ $clusterName }}-{{ $clusterHash }}"
+      ]
+    }
+
+    {{- $fipResourceName  := printf "fip_%s_%s" $node.Name $resourceSuffix }}
+
+    resource "openstack_networking_floatingip_v2" "{{ $fipResourceName }}" {
+      provider   = openstack.nodepool_{{ $resourceSuffix }}
+      # change this from input params
+      pool = "Ext-Net"
+
+      tags = [
+        "managed-by:Claudie"
+        "claudie-cluster:{{ $clusterName }}-{{ $clusterHash }}"
+      ]
+    }
+
+    {{- $vmNetworkPort           := printf "vm_port_%s_%s" $node.Name $resourceSuffix }}
+    {{- $vmNetworkPortName       := printf "vm-port-%s-%s" $node.Name $resourceSuffix }}
+
+    data "openstack_networking_port_v2" "{{ $vmNetworkPort }}" {
+      name = "{ $vmNetworkPortName }"
+      device_id  = openstack_compute_instance_v2.{{ $serverResourceName }}.id
+      network_id = openstack_compute_instance_v2.{{ $serverResourceName }}.network.1.uuid
+    }
+
+    {{- $fipAssociateName  := printf "fip_associate_%s_%s" $node.Name $resourceSuffix }}
+
+    resource "openstack_networking_floatingip_associate_v2" "{{ $fipAssociateName }}" {
+      floating_ip = openstack_networking_floatingip_v2.{{ $fipResourceName }}.address
+      port_id     = data.openstack_networking_port_v2.{{ $vmNetworkPort }}.id
+    }
     
-    #need to change to our custom. waiting to quota increase ticket get resolved
-    security_groups = ["default"]
-
-    network {
-      uuid = openstack_networking_network_v2.{{ $networkResourceName }}.id
+    output "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
+      value = {
+        {{- range $node := $nodepool.Nodes }}
+            {{- $serverResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
+            {{- $fipResourceName  := printf "fip_%s_%s" $node.Name $resourceSuffix }}
+            "${openstack_compute_instance_v2.{{ $serverResourceName }}.name}" = openstack_networking_floatingip_associate_v2.{{ $fipResourceName }}.floating_ip
+        {{- end }}
+      }
     }
-
-    tags = {
-      "managed-by"      : "Claudie"
-      "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
-    }
-  }
-{{- end }}
-
-
-output "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
-  value = {
-    {{- range $node := $nodepool.Nodes }}
-        {{- $serverResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
-        "${openstack_compute_instance_v2.{{ $serverResourceName }}.name}" = openstack_compute_instance_v2.{{ $serverResourceName }}.ipv4_address
-    {{- end }}
-  }
-}
+  {{- end }}
 {{- end }}

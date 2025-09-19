@@ -22,8 +22,8 @@
   {{- range $node := $nodepool.Nodes }}
 
   {{- $serverResourceName           := printf "%s_%s" $node.Name $resourceSuffix }}
-  {{- $networkResourceName          := printf "%s_%s_network" $nodepool.Name $resourceSuffix }}
-  {{- $volumeResourceName           := printf "%s_%s_volume" $node.Name $resourceSuffix }}
+  {{- $networkResourceName          := printf "network_%s" $resourceSuffix }}
+  {{- $volumeResourceName           := printf "volume_%s" $resourceSuffix }}
 
   resource "openstack_compute_instance_v2" "{{ $serverResourceName }}"  {
     provider          = openstack.nodepool_{{ $resourceSuffix }}

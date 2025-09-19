@@ -66,7 +66,7 @@
       provider   = openstack.nodepool_{{ $resourceSuffix }}
       name = "{ $vmNetworkPortName }"
       device_id  = openstack_compute_instance_v2.{{ $serverResourceName }}.id
-      network_id = openstack_compute_instance_v2.{{ $serverResourceName }}.network.1.uuid
+      network_id = openstack_compute_instance_v2.{{ $serverResourceName }}.network.0.uuid
     }
 
     {{- $fipAssociateName  := printf "fip_associate_%s_%s" $node.Name $resourceSuffix }}

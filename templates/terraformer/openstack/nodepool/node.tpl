@@ -35,7 +35,7 @@
     image_id          = "{{ $nodepool.Details.Image }}"
     flavor_name       = "{{ $nodepool.Details.ServerType }}"
     availability_zone = "{{ $nodepool.Details.Zone }}"
-    key_pair          = openstack_compute_keypair_v2.{{ $keypairResourceName }}.id,
+    key_pair          = openstack_compute_keypair_v2.{{ $keypairResourceName }}.id
     
     #need to change to our custom. waiting to quota increase ticket get resolved
     security_groups = ["default"]

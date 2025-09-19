@@ -20,7 +20,7 @@
 
   {{- $privateNetResourceName  := printf "network_%s"  $resourceSuffix }}
 
-  resource "openstack_networking_network_v2" "{{ privateNetResourceName }}" {
+  resource "openstack_networking_network_v2" "{{ $privateNetResourceName }}" {
     provider   = openstack.nodepool_{{ $resourceSuffix }}
     name = "{{ $privateNetResourceName }}"
   }

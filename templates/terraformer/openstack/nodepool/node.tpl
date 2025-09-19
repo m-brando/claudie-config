@@ -64,7 +64,7 @@
 
     data "openstack_networking_port_v2" "{{ $vmNetworkPort }}" {
       provider   = openstack.nodepool_{{ $resourceSuffix }}
-      name = "{ $vmNetworkPortName }"
+      name = "{{ $vmNetworkPortName }}"
       device_id  = openstack_compute_instance_v2.{{ $serverResourceName }}.id
       network_id = openstack_compute_instance_v2.{{ $serverResourceName }}.network.0.uuid
     }
@@ -82,7 +82,7 @@
         {{- range $node := $nodepool.Nodes }}
             {{- $serverResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
             {{- $fipResourceName  := printf "fip_%s_%s" $node.Name $resourceSuffix }}
-            "${openstack_compute_instance_v2.{{ $serverResourceName }}.name}" = openstack_networking_floatingip_associate_v2.{{ $fipAssociateName }}.floating_ip
+            "openstack_compute_instance_v2.{{ $serverResourceName }}.name" = openstack_networking_floatingip_associate_v2.{{ $fipAssociateName }}.floating_ip
         {{- end }}
       }
     }

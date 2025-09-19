@@ -16,6 +16,11 @@
     provider   = openstack.nodepool_{{ $resourceSuffix }}
     # change this from input params
     pool = "Ext-Net"
+
+    tags = {
+      "managed-by"      : "Claudie"
+      "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
+    }
   }
 
   {{- $privateNetResourceName  := printf "network_%s"  $resourceSuffix }}
@@ -23,6 +28,11 @@
   resource "openstack_networking_network_v2" "{{ $privateNetResourceName }}" {
     provider   = openstack.nodepool_{{ $resourceSuffix }}
     name = "{{ $privateNetResourceName }}"
+
+    tags = {
+      "managed-by"      : "Claudie"
+      "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
+    }
   }
 
   {{- $privateSubResourceName  := printf "subnet_%s"  $resourceSuffix }}
@@ -34,6 +44,11 @@
     cidr            = "10.0.0.0/16"
     ip_version      = 4
     gateway_ip      = "10.0.1.1"
+
+    tags = {
+      "managed-by"      : "Claudie"
+      "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
+    }
   }
 
   {{- $routerResourceName  := printf "router_%s"  $resourceSuffix }}
@@ -43,6 +58,11 @@
     name = "{{ $routerResourceName }}"
     # need to change from input param
     external_network_id = "6c928965-47ea-463f-acc8-6d4a152e9745"
+
+    tags = {
+      "managed-by"      : "Claudie"
+      "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
+    }
   }
 
   resource "openstack_networking_router_interface_v2" "router_iface" {

@@ -15,12 +15,8 @@
 
   resource "openstack_compute_keypair_v2" "{{ $keypairResourceName }}" {
     provider   = openstack.nodepool_{{ $resourceSuffix }}
-    key_name   = "{{ $keypairName }}"
+    name   = "{{ $keypairName }}"
     public_key = file("./{{ $nodepool.Name }}")
-    tags = {
-      Name            = "{{ $keypairName }}"
-      Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
-    }
   }
 
   {{- range $node := $nodepool.Nodes }}

@@ -10,5 +10,6 @@ provider "openstack" {
     application_credential_id     = "{{ $.Data.Provider.GetOpenstack.ApplicationCredentialID }}"
     application_credential_secret = "{{ $.Data.Provider.GetOpenstack.ApplicationCredentialSecret }}"
     region                        = "{{ $region }}"
+    alias                         = "nodepool_{{ $resourceSuffix }}"
 }
 {{- end }}

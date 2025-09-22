@@ -21,11 +21,12 @@
 
   {{- range $node := $nodepool.Nodes }}
 
-    {{- $serverResourceName           := printf "%s_%s" $node.Name $resourceSuffix }}
+    {{- $instanceResourceName         := printf "%s_%s" $node.Name $resourceSuffix }}
     {{- $networkResourceName          := printf "network_%s" $resourceSuffix }}
     {{- $volumeResourceName           := printf "volume_%s_%s" $node.Name $resourceSuffix }}
+    {{- $isWorkerNodeWithDiskAttached := and (not $nodepool.IsControl) (gt $nodepool.Details.StorageDiskSize 0) }}
 
-    resource "openstack_compute_instance_v2" "{{ $serverResourceName }}"  {
+    resource "openstack_compute_instance_v2" "{{ $instanceResourceName }}"  {
       provider          = openstack.nodepool_{{ $resourceSuffix }}
       name              = "{{ $node.Name }}"
       image_id          = "{{ $nodepool.Details.Image }}"
@@ -65,8 +66,8 @@
     data "openstack_networking_port_v2" "{{ $vmNetworkPort }}" {
       provider   = openstack.nodepool_{{ $resourceSuffix }}
       name = "{{ $vmNetworkPortName }}"
-      device_id  = openstack_compute_instance_v2.{{ $serverResourceName }}.id
-      network_id = openstack_compute_instance_v2.{{ $serverResourceName }}.network.0.uuid
+      device_id  = openstack_compute_instance_v2.{{ $instanceResourceName }}.id
+      network_id = openstack_compute_instance_v2.{{ $instanceResourceName }}.network.0.uuid
     }
 
     {{- $fipAssociateName  := printf "fip_associate_%s_%s" $node.Name $resourceSuffix }}
@@ -76,13 +77,33 @@
       floating_ip = openstack_networking_floatingip_v2.{{ $fipResourceName }}.address
       port_id     = data.openstack_networking_port_v2.{{ $vmNetworkPort }}.id
     }
-    
+
+    {{- if $isKubernetesCluster }}
+      {{- if $isWorkerNodeWithDiskAttached }}
+        {{- $volumeName                   := printf "%sd" $node.Name }}
+        {{- $volumeResourceName           := printf "%s_%s_volume" $node.Name $resourceSuffix }}
+        {{- $volumeAttachmentResourceName := printf "%s_att" $volumeResourceName }}
+
+        resource "openstack_blockstorage_volume_v3" "{{ $volumeResourceName }}" {
+          name    = "{{ $volumeName }}"
+          size    = "{{ $nodepool.Details.StorageDiskSize }}"
+          region  = "{{ $nodepool.Details.Region }}"
+          volume_type = "high-speed-gen2"
+        }
+
+        resource "openstack_compute_volume_attach_v2" "volume_attach" {
+          instance_id = openstack_compute_instance_v2.{{ $instanceResourceName }}.id
+          volume_id   = openstack_blockstorage_volume_v3.{{ $volumeResourceName }}.id
+        }
+      {{- end }}
+    {{- end }}
+
     output "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
       value = {
         {{- range $node := $nodepool.Nodes }}
-            {{- $serverResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
+            {{- $instanceResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
             {{- $fipResourceName  := printf "fip_%s_%s" $node.Name $resourceSuffix }}
-            "openstack_compute_instance_v2.{{ $serverResourceName }}.name" = openstack_networking_floatingip_associate_v2.{{ $fipAssociateName }}.floating_ip
+            "openstack_compute_instance_v2.{{ $instanceResourceName }}.name" = openstack_networking_floatingip_associate_v2.{{ $fipAssociateName }}.floating_ip
         {{- end }}
       }
     }

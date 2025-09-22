@@ -48,39 +48,36 @@
 
       {{- if $isKubernetesCluster }}
         user_data = <<-EOF
-        #!/bin/bash
+        #cloud-config
 
-        set -euxo pipefail
-        # Allow ssh connection for root
-        sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
-        cat /root/.ssh/temp > /root/.ssh/authorized_keys
-        rm /root/.ssh/temp
-
-        # Configure SSHD
-        echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
-        echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
-        echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> /etc/ssh/sshd_config
-
-        # Restart SSH services if active
-        sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
-        ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
-
-        if [ $sshd_active = 'active' ]; then
-            systemctl restart sshd
-        fi
-
-        if [ $ssh_active = 'active' ]; then
-            systemctl restart ssh
-        fi
-
-        # Create longhorn volume directory
-        mkdir -p /opt/claudie/data
-        EOF
-
+        # 1. TESST
         password: mypasswd
         chpasswd: { expire: False }
         ssh_pwauth: True
+        disable_root: false
 
+        runcmd:
+          # Clean up authorized_keys to only allow ssh-rsa keys
+          - sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
+          - cat /root/.ssh/temp > /root/.ssh/authorized_keys
+          - rm /root/.ssh/temp
+
+          # Modify SSH configuration
+          - echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
+          - echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
+          - echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config
+          - echo 'PubkeyAcceptedKeyTypes=+ssh-rsa' >> /etc/ssh/sshd_config
+
+          # Restart SSH service if it's running
+          - |
+            sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
+            ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
+            if [ "$sshd_active" = "active" ]; then
+              systemctl restart sshd
+            fi
+            if [ "$ssh_active" = "active" ]; then
+              systemctl restart ssh
+            fi
       {{- end }}
     }
 

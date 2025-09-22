@@ -7,6 +7,8 @@
 
 provider "openstack" {
     auth_url                      = "{{ $.Data.Provider.GetOpenstack.AuthURL }}"
+    domain_id                     = "{{ $.Data.Provider.GetOpenstack.DomainID }}"
+    tenant_id                     = "{{ $.Data.Provider.GetOpenstack.projectID }}"
     application_credential_id     = "{{ $.Data.Provider.GetOpenstack.ApplicationCredentialID }}"
     application_credential_secret = "{{ $.Data.Provider.GetOpenstack.ApplicationCredentialSecret }}"
     region                        = "{{ $region }}"

@@ -51,6 +51,7 @@
         #!/bin/bash
         # Create longhorn volume directory
         mkdir -p /opt/claudie/data
+        EOF
       {{- end }}
     }
 
@@ -105,7 +106,6 @@
           volume_id   = openstack_blockstorage_volume_v3.{{ $volumeResourceName }}.id
         }
       {{- end }}
-      EOF
     {{- end }}
 
     output "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {

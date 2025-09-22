@@ -33,6 +33,7 @@
     cidr            = "10.0.0.0/16"
     ip_version      = 4
     gateway_ip      = "10.0.1.1"
+    dns_nameservers = ["8.8.8.8", "1.1.1.1"]
 
     tags = [
       "managed-by:Claudie",

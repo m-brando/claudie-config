@@ -65,7 +65,6 @@
 
     data "openstack_networking_port_v2" "{{ $vmNetworkPort }}" {
       provider   = openstack.nodepool_{{ $resourceSuffix }}
-      name = "{{ $vmNetworkPortName }}"
       device_id  = openstack_compute_instance_v2.{{ $instanceResourceName }}.id
       network_id = openstack_compute_instance_v2.{{ $instanceResourceName }}.network.0.uuid
     }

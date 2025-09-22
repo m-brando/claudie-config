@@ -45,6 +45,13 @@
         "managed-by:Claudie",
         "claudie-cluster:{{ $clusterName }}-{{ $clusterHash }}"
       ]
+
+      {{- if $isKubernetesCluster }}
+        user_data = <<EOF
+        #!/bin/bash
+        # Create longhorn volume directory
+        mkdir -p /opt/claudie/data
+      {{- end }}
     }
 
     {{- $fipResourceName  := printf "fip_%s_%s" $node.Name $resourceSuffix }}
@@ -78,11 +85,6 @@
     }
 
     {{- if $isKubernetesCluster }}
-      user_data = <<EOF
-      #!/bin/bash
-      # Create longhorn volume directory
-      mkdir -p /opt/claudie/data
-
       {{- /* Only Mount disk for Worker nodes that have a non-zero requested disk size */}}
       {{- if $isWorkerNodeWithDiskAttached }}
         {{- $volumeName                   := printf "%sd" $node.Name }}

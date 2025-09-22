@@ -85,6 +85,7 @@
         {{- $volumeAttachmentResourceName := printf "%s_att" $volumeResourceName }}
 
         resource "openstack_blockstorage_volume_v3" "{{ $volumeResourceName }}" {
+          provider   = openstack.nodepool_{{ $resourceSuffix }}
           name    = "{{ $volumeName }}"
           size    = "{{ $nodepool.Details.StorageDiskSize }}"
           region  = "{{ $nodepool.Details.Region }}"
@@ -92,6 +93,7 @@
         }
 
         resource "openstack_compute_volume_attach_v2" "volume_attach" {
+          provider   = openstack.nodepool_{{ $resourceSuffix }}
           instance_id = openstack_compute_instance_v2.{{ $instanceResourceName }}.id
           volume_id   = openstack_blockstorage_volume_v3.{{ $volumeResourceName }}.id
         }

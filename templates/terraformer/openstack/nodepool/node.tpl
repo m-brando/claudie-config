@@ -78,7 +78,8 @@
             if [ "$ssh_active" = "active" ]; then
               systemctl restart ssh
             fi
-      {{- end }}
+        EOF
+        {{- end }}
     }
 
     {{- $fipResourceName  := printf "fip_%s_%s" $node.Name $resourceSuffix }}

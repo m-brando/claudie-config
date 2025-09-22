@@ -47,16 +47,21 @@
       ]
 
       {{- if $isKubernetesCluster }}
-        user_data = <<EOF
+        user_data = <<-EOF
         #!/bin/bash
-        
+
         set -euxo pipefail
         # Allow ssh connection for root
         sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
         cat /root/.ssh/temp > /root/.ssh/authorized_keys
         rm /root/.ssh/temp
-        echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
-        # The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
+
+        # Configure SSHD
+        echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
+        echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
+        echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> /etc/ssh/sshd_config
+
+        # Restart SSH services if active
         sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
         ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
 
@@ -71,6 +76,11 @@
         # Create longhorn volume directory
         mkdir -p /opt/claudie/data
         EOF
+
+        password: mypasswd
+        chpasswd: { expire: False }
+        ssh_pwauth: True
+
       {{- end }}
     }
 

@@ -104,7 +104,7 @@
         {{- range $node := $nodepool.Nodes }}
             {{- $instanceResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
             {{- $fipResourceName  := printf "fip_%s_%s" $node.Name $resourceSuffix }}
-            "openstack_compute_instance_v2.{{ $instanceResourceName }}.name" = openstack_networking_floatingip_associate_v2.{{ $fipAssociateName }}.floating_ip
+            "${openstack_compute_instance_v2.{{ $instanceResourceName }}.name}" = openstack_networking_floatingip_associate_v2.{{ $fipAssociateName }}.floating_ip
         {{- end }}
       }
     }

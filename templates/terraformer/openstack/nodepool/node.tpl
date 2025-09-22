@@ -78,6 +78,12 @@
     }
 
     {{- if $isKubernetesCluster }}
+      user_data = <<EOF
+      #!/bin/bash
+      # Create longhorn volume directory
+      mkdir -p /opt/claudie/data
+
+      {{- /* Only Mount disk for Worker nodes that have a non-zero requested disk size */}}
       {{- if $isWorkerNodeWithDiskAttached }}
         {{- $volumeName                   := printf "%sd" $node.Name }}
         {{- $volumeResourceName           := printf "%s_%s_volume" $node.Name $resourceSuffix }}
@@ -97,6 +103,7 @@
           volume_id   = openstack_blockstorage_volume_v3.{{ $volumeResourceName }}.id
         }
       {{- end }}
+      EOF
     {{- end }}
 
     output "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {

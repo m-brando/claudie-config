@@ -7,9 +7,9 @@
 {{- $LoadBalancerRoles     := .Data.LBData.Roles }}
 {{- $K8sHasAPIServer       := .Data.K8sData.HasAPIServer }}
 
-{{- range $_, $region := .Data.Regions }}
+{{- range $_, $rn := .Data.RegionNetwork }}
 
-  {{- $resourceSuffix := printf "%s_%s_%s" $region $specName $uniqueFingerPrint }}
+  {{- $resourceSuffix := printf "%s_%s_%s" $rn.Region $specName $uniqueFingerPrint }}
   {{- $fipResourceName  := printf "fip_%s"  $resourceSuffix }}
 
   {{- $privateNetResourceName  := printf "network_%s"  $resourceSuffix }}
@@ -44,7 +44,8 @@
   {{- $extNetworkResourceName  := printf "ext_net_%s"  $resourceSuffix }}
 
   data "openstack_networking_network_v2" "{{ $extNetworkResourceName }}" {
-    region = "{{ $region }}"
+    region = "{{ $rn.Region }}"
+    name  = "{{ $rn.ExternalNetwork }}"
     external = true
   }
 

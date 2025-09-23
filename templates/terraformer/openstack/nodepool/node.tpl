@@ -71,6 +71,22 @@
             if [ "$ssh_active" = "active" ]; then
               systemctl restart ssh
             fi
+        
+          {{- /* Only Mount disk for Worker nodes that have a non-zero requested disk size */}}
+          {{- if $isWorkerNodeWithDiskAttached }}
+
+            # Mount volume only when not mounted yet
+            sleep 50
+            disk=$(lsblk -o NAME,ID | grep 7db47cd8-254b-4bc2-99f1-9b12ae898425 | awk '{print $1}')
+            if ! grep -qs "/dev/$disk" /proc/mounts; then
+
+              if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
+                mkfs.xfs /dev/$disk
+              fi
+              mount /dev/$disk /opt/claudie/data
+              echo "/dev/$disk /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
+            fi
+          {{- end }}
         EOF
         {{- end }}
     }

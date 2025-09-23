@@ -46,7 +46,7 @@
         "claudie-cluster:{{ $clusterName }}-{{ $clusterHash }}"
       ]
 
-      {{- if $isKubernetesCluster }}
+      {{- if (or $isKubernetesCluster isLoadbalancerCluster) }}
         user_data = <<-EOF
         #cloud-config
 

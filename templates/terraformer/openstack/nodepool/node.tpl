@@ -77,7 +77,7 @@
 
             # Mount volume only when not mounted yet
             sleep 50
-            disk=$(lsblk -o NAME,ID | grep 7db47cd8-254b-4bc2-99f1-9b12ae898425 | awk '{print $1}')
+            disk=$(lsblk -o NAME,ID | grep "openstack_blockstorage_volume_v3.{{ $volumeResourceName }}.id" | awk '{print $1}')
             if ! grep -qs "/dev/$disk" /proc/mounts; then
 
               if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then

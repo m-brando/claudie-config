@@ -41,13 +41,19 @@
     ]
   }
 
+  {{- $extNetworkResourceName  := printf "ext_net_%s"  $resourceSuffix }}
+
+  data "openstack_networking_network_v2" "{{ $extNetworkResourceName }}" {
+    region = "{{ $region }}"
+    external = true
+  }
+
   {{- $routerResourceName  := printf "router_%s"  $resourceSuffix }}
 
   resource "openstack_networking_router_v2" "{{ $routerResourceName }}" {
-    provider   = openstack.nodepool_{{ $resourceSuffix }}
+    provider   = openstack.nodepool_{{ $resourceSuffix }} 
     name = "{{ $routerResourceName }}"
-    # need to change from input param
-    external_network_id = "6c928965-47ea-463f-acc8-6d4a152e9745"
+    external_network_id = openstack_networking_network_v2.{{ $extNetworkResourceName }}.id"
 
     tags = [
       "managed-by:Claudie",

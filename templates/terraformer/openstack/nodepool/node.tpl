@@ -51,7 +51,6 @@
         #cloud-config
 
         runcmd:
-          # Clean up authorized_keys to only allow ssh-rsa keys
           - sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
           - cat /root/.ssh/temp > /root/.ssh/authorized_keys
           - rm /root/.ssh/temp
@@ -80,7 +79,7 @@
 
     resource "openstack_networking_floatingip_v2" "{{ $fipResourceName }}" {
       provider   = openstack.nodepool_{{ $resourceSuffix }}
-      pool = "{{ $nodepool.Details.ExternalNetworkId }}"
+      pool = "{{ $nodepool.Details.ExternalNetworkName }}"
 
       tags = [
         "managed-by:Claudie",

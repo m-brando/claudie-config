@@ -50,12 +50,6 @@
         user_data = <<-EOF
         #cloud-config
 
-        # 1. TESST
-        password: mypasswd
-        chpasswd: { expire: False }
-        ssh_pwauth: True
-        disable_root: false
-
         runcmd:
           # Clean up authorized_keys to only allow ssh-rsa keys
           - sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
@@ -87,7 +81,7 @@
     resource "openstack_networking_floatingip_v2" "{{ $fipResourceName }}" {
       provider   = openstack.nodepool_{{ $resourceSuffix }}
       # change this from input params
-      pool = "Ext-Net"
+      pool = "{{ $nodepool.Details.ExternalNetworkId }}"
 
       tags = [
         "managed-by:Claudie",

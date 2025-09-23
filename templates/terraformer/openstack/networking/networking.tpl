@@ -53,7 +53,7 @@
   resource "openstack_networking_router_v2" "{{ $routerResourceName }}" {
     provider   = openstack.nodepool_{{ $resourceSuffix }} 
     name = "{{ $routerResourceName }}"
-    external_network_id = openstack_networking_network_v2.{{ $extNetworkResourceName }}.id"
+    external_network_id = openstack_networking_network_v2.{{ $extNetworkResourceName }}.id
 
     tags = [
       "managed-by:Claudie",

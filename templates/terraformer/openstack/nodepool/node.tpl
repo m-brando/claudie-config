@@ -80,7 +80,6 @@
 
     resource "openstack_networking_floatingip_v2" "{{ $fipResourceName }}" {
       provider   = openstack.nodepool_{{ $resourceSuffix }}
-      # change this from input params
       pool = "{{ $nodepool.Details.ExternalNetworkId }}"
 
       tags = [
@@ -118,7 +117,6 @@
           name    = "{{ $volumeName }}"
           size    = "{{ $nodepool.Details.StorageDiskSize }}"
           region  = "{{ $nodepool.Details.Region }}"
-          volume_type = "high-speed-gen2"
         }
 
         resource "openstack_compute_volume_attach_v2" "volume_attach" {

@@ -91,7 +91,8 @@
           if [ "$ssh_active" = "active" ]; then
             systemctl restart ssh
           fi
-      
+
+      {{- if $isKubernetesCluster }}
         {{- /* Only Mount disk for Worker nodes that have a non-zero requested disk size */}}
         {{- if $isWorkerNodeWithDiskAttached }}
 
@@ -107,6 +108,7 @@
             echo "/dev/$disk /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
           fi
         {{- end }}
+      {{- end }}
       EOF
     }
 

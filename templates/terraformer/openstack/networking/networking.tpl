@@ -9,7 +9,7 @@
 
 {{- range $_, $rn := .Data.RegionNetwork }}
 
-  {{- $resourceSuffix := printf "%s_%s_%s_%s" $rn.Region $specName $uniqueFingerPrint }}
+  {{- $resourceSuffix := printf "%s_%s_%s" $rn.Region $specName $uniqueFingerPrint }}
   {{- $privateNetResourceName  := printf "network_%s_%s"  $resourceSuffix $.Data.ClusterData.ClusterType }}
 
   resource "openstack_networking_network_v2" "{{ $privateNetResourceName }}" {

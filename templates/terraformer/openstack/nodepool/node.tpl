@@ -46,49 +46,67 @@
         "claudie-cluster:{{ $clusterName }}-{{ $clusterHash }}"
       ]
 
-      {{- if (or $isKubernetesCluster $isLoadbalancerCluster) }}
-        user_data = <<-EOF
-        #cloud-config
+      {{- if $isKubernetesCluster }}
+      block_device {
+        uuid                  = "{{ $nodepool.Details.Image }}"
+        source_type           = "image"
+        destination_type      = "volume"
+        volume_size           = 100
+        boot_index            = 0
+        delete_on_termination = true
+        }
+      {{- elseif $isLoadbalancerCluster }}
+      block_device {
+        uuid                  = "{{ $nodepool.Details.Image }}"
+        source_type           = "image"
+        destination_type      = "volume"
+        volume_size           = 50
+        boot_index            = 0
+        delete_on_termination = true
+      }
+      {{- end }}
 
-        runcmd:
-          - sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
-          - cat /root/.ssh/temp > /root/.ssh/authorized_keys
-          - rm /root/.ssh/temp
+      user_data = <<-EOF
+      #cloud-config
 
-          # Modify SSH configuration
-          - echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
-          - echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
-          - echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config
-          - echo 'PubkeyAcceptedKeyTypes=+ssh-rsa' >> /etc/ssh/sshd_config
+      runcmd:
+        - sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
+        - cat /root/.ssh/temp > /root/.ssh/authorized_keys
+        - rm /root/.ssh/temp
 
-          # Restart SSH service if it's running
-          - |
-            sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
-            ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
-            if [ "$sshd_active" = "active" ]; then
-              systemctl restart sshd
+        # Modify SSH configuration
+        - echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
+        - echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
+        - echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config
+        - echo 'PubkeyAcceptedKeyTypes=+ssh-rsa' >> /etc/ssh/sshd_config
+
+        # Restart SSH service if it's running
+        - |
+          sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
+          ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
+          if [ "$sshd_active" = "active" ]; then
+            systemctl restart sshd
+          fi
+          if [ "$ssh_active" = "active" ]; then
+            systemctl restart ssh
+          fi
+      
+        {{- /* Only Mount disk for Worker nodes that have a non-zero requested disk size */}}
+        {{- if $isWorkerNodeWithDiskAttached }}
+
+          # Mount volume only when not mounted yet
+          sleep 50
+          disk=$(lsblk -o NAME,ID | grep "openstack_blockstorage_volume_v3.{{ $volumeResourceName }}.id" | awk '{print $1}')
+          if ! grep -qs "/dev/$disk" /proc/mounts; then
+
+            if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
+              mkfs.xfs /dev/$disk
             fi
-            if [ "$ssh_active" = "active" ]; then
-              systemctl restart ssh
-            fi
-        
-          {{- /* Only Mount disk for Worker nodes that have a non-zero requested disk size */}}
-          {{- if $isWorkerNodeWithDiskAttached }}
-
-            # Mount volume only when not mounted yet
-            sleep 50
-            disk=$(lsblk -o NAME,ID | grep "openstack_blockstorage_volume_v3.{{ $volumeResourceName }}.id" | awk '{print $1}')
-            if ! grep -qs "/dev/$disk" /proc/mounts; then
-
-              if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
-                mkfs.xfs /dev/$disk
-              fi
-              mount /dev/$disk /opt/claudie/data
-              echo "/dev/$disk /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
-            fi
-          {{- end }}
-        EOF
+            mount /dev/$disk /opt/claudie/data
+            echo "/dev/$disk /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
+          fi
         {{- end }}
+      EOF
     }
 
     {{- $fipResourceName  := printf "fip_%s_%s" $node.Name $resourceSuffix }}

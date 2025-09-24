@@ -149,25 +149,28 @@
 
         resource "openstack_blockstorage_volume_v3" "{{ $volumeResourceName }}" {
           provider   = openstack.nodepool_{{ $resourceSuffix }}
-          name    = "{{ $volumeName }}"
-          size    = "{{ $nodepool.Details.StorageDiskSize }}"
-          region  = "{{ $nodepool.Details.Region }}"
+          name       = "{{ $volumeName }}"
+          size       = "{{ $nodepool.Details.StorageDiskSize }}"
+          region     = "{{ $nodepool.Details.Region }}"
         }
 
         resource "openstack_compute_volume_attach_v2" "{{ $volumeAttachmentResourceName }}" {
-          provider   = openstack.nodepool_{{ $resourceSuffix }}
+          provider    = openstack.nodepool_{{ $resourceSuffix }}
           instance_id = openstack_compute_instance_v2.{{ $instanceResourceName }}.id
           volume_id   = openstack_blockstorage_volume_v3.{{ $volumeResourceName }}.id
         }
       {{- end }}
     {{- end }}
-
-    output "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
-      value = {
-        {{- $instanceResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
-        {{- $fipResourceName  := printf "fip_%s_%s" $node.Name $resourceSuffix }}
-        "${openstack_compute_instance_v2.{{ $instanceResourceName }}.name}" = openstack_networking_floatingip_associate_v2.{{ $fipAssociateName }}.floating_ip
-      }
-    }
   {{- end }}
+
+  output "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
+    value = {
+      {{- range $node := $nodepool.Nodes }}
+        {{- $instanceResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
+        {{- $fipResourceName      := printf "fip_%s_%s" $node.Name $resourceSuffix }}
+        {{- $fipAssociateName     := printf "fip_associate_%s_%s" $node.Name $resourceSuffix }}
+        "${openstack_compute_instance_v2.{{ $instanceResourceName }}.name}" = openstack_networking_floatingip_associate_v2.{{ $fipAssociateName }}.floating_ip
+      {{- end }}
+    }
+}
 {{- end }}

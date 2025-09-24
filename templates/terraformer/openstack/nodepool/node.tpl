@@ -51,7 +51,7 @@
         uuid                  = "{{ $nodepool.Details.Image }}"
         source_type           = "image"
         destination_type      = "volume"
-        volume_size           = 10
+        volume_size           = 100
         boot_index            = 0
         delete_on_termination = true
         }

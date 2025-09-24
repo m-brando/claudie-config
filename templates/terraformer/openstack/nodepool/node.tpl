@@ -143,7 +143,6 @@
       {{- /* Only Mount disk for Worker nodes that have a non-zero requested disk size */}}
       {{- if $isWorkerNodeWithDiskAttached }}
         {{- $volumeName                   := printf "%sd" $node.Name }}
-        {{- $volumeResourceName           := printf "%s_%s_volume" $node.Name $resourceSuffix }}
         {{- $volumeAttachmentResourceName := printf "%s_att" $volumeResourceName }}
 
         resource "openstack_blockstorage_volume_v3" "{{ $volumeResourceName }}" {

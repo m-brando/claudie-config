@@ -61,7 +61,9 @@
     ]
   }
 
-  resource "openstack_networking_router_interface_v2" "router_iface" {
+  {{- $routerIfaecResourceName  := printf "router_iface_%s_%s"  $resourceSuffix $.Data.ClusterData.ClusterType }}
+
+  resource "openstack_networking_router_interface_v2" "{{ $routerIfaecResourceName }}" {
     provider   = openstack.nodepool_{{ $resourceSuffix }}
     router_id = openstack_networking_router_v2.{{ $routerResourceName }}.id
     subnet_id = openstack_networking_subnet_v2.{{ $privateSubResourceName }}.id

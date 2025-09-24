@@ -55,7 +55,8 @@
         boot_index            = 0
         delete_on_termination = true
         }
-      {{- elif $isLoadbalancerCluster }}
+      {{- end }}
+      {{- if $isLoadbalancerCluster }}
       block_device {
         uuid                  = "{{ $nodepool.Details.Image }}"
         source_type           = "image"

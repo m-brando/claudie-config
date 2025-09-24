@@ -22,7 +22,7 @@
   {{- range $node := $nodepool.Nodes }}
 
     {{- $instanceResourceName         := printf "%s_%s" $node.Name $resourceSuffix }}
-    {{- $networkResourceName          := printf "network_%s" $resourceSuffix }}
+    {{- $privateNetResourceName       := printf "network_%s_%s" $resourceSuffix $.Data.ClusterData.ClusterType}}
     {{- $volumeResourceName           := printf "volume_%s_%s" $node.Name $resourceSuffix }}
     {{- $isWorkerNodeWithDiskAttached := and (not $nodepool.IsControl) (gt $nodepool.Details.StorageDiskSize 0) }}
 
@@ -38,7 +38,7 @@
       security_groups = ["default"]
 
       network {
-        uuid = openstack_networking_network_v2.{{ $networkResourceName }}.id
+        uuid = openstack_networking_network_v2.{{ $privateNetResourceName }}.id
       }
 
       tags = [

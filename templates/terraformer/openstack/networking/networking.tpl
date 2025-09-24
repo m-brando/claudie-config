@@ -9,10 +9,8 @@
 
 {{- range $_, $rn := .Data.RegionNetwork }}
 
-  {{- $resourceSuffix := printf "%s_%s_%s" $rn.Region $specName $uniqueFingerPrint }}
-  {{- $fipResourceName  := printf "fip_%s"  $resourceSuffix }}
-
-  {{- $privateNetResourceName  := printf "network_%s"  $resourceSuffix }}
+  {{- $resourceSuffix := printf "%s_%s_%s_%s" $rn.Region $specName $uniqueFingerPrint }}
+  {{- $privateNetResourceName  := printf "network_%s_%s"  $resourceSuffix .Data.ClusterData.ClusterType }}
 
   resource "openstack_networking_network_v2" "{{ $privateNetResourceName }}" {
     provider   = openstack.nodepool_{{ $resourceSuffix }}
@@ -24,7 +22,7 @@
     ]
   }
 
-  {{- $privateSubResourceName  := printf "subnet_%s"  $resourceSuffix }}
+  {{- $privateSubResourceName  := printf "subnet_%s_%s"  $resourceSuffix .Data.ClusterData.ClusterType }}
 
   resource "openstack_networking_subnet_v2" "{{ $privateSubResourceName }}" {
     provider   = openstack.nodepool_{{ $resourceSuffix }}
@@ -50,7 +48,7 @@
     external = true
   }
 
-  {{- $routerResourceName  := printf "router_%s"  $resourceSuffix }}
+  {{- $routerResourceName  := printf "router_%s_%s"  $resourceSuffix .Data.ClusterData.ClusterType }}
 
   resource "openstack_networking_router_v2" "{{ $routerResourceName }}" {
     provider   = openstack.nodepool_{{ $resourceSuffix }} 

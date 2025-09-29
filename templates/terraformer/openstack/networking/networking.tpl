@@ -91,7 +91,7 @@
     ethertype         = "IPv4"
     port_range_min    = 0
     port_range_max    = 65535
-    protocol          = "tcp
+    protocol          = "tcp"
     remote_ip_prefix  = "0.0.0.0/0"
     security_group_id = openstack_networking_secgroup_v2.{{ $securityGroupResourceName }}.id
   }

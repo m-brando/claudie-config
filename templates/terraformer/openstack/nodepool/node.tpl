@@ -25,6 +25,7 @@
     {{- $privateNetResourceName       := printf "network_%s_%s" $resourceSuffix $.Data.ClusterData.ClusterType}}
     {{- $volumeResourceName           := printf "volume_%s_%s" $node.Name $resourceSuffix }}
     {{- $isWorkerNodeWithDiskAttached := and (not $nodepool.IsControl) (gt $nodepool.Details.StorageDiskSize 0) }}
+    {{- $securityGroupResourceName    := printf "claudie_sg_%s"   $resourceSuffix }}
 
     resource "openstack_compute_instance_v2" "{{ $instanceResourceName }}"  {
       provider          = openstack.nodepool_{{ $resourceSuffix }}
@@ -35,7 +36,7 @@
       key_pair          = openstack_compute_keypair_v2.{{ $keypairResourceName }}.id
       
       #need to change to our custom. waiting to quota increase ticket get resolved
-      security_groups = ["default"]
+      security_groups = ["{{ openstack_networking_secgroup_v2 }}.{{ $securityGroupResourceName }}"]
 
       network {
         uuid = openstack_networking_network_v2.{{ $privateNetResourceName }}.id

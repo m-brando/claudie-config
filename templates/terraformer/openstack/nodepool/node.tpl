@@ -35,8 +35,7 @@
       availability_zone = "{{ $nodepool.Details.Zone }}"
       key_pair          = openstack_compute_keypair_v2.{{ $keypairResourceName }}.id
       
-      #need to change to our custom. waiting to quota increase ticket get resolved
-      security_groups = ["{{ openstack_networking_secgroup_v2 }}.{{ $securityGroupResourceName }}"]
+      security_groups = ["openstack_networking_secgroup_v2.{{ $securityGroupResourceName }}.name"]
 
       network {
         uuid = openstack_networking_network_v2.{{ $privateNetResourceName }}.id

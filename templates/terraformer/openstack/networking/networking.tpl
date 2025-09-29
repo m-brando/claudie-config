@@ -89,7 +89,7 @@
     region            = "{{ $rn.Region }}"
     direction         = "egress"
     ethertype         = "IPv4"
-    port_range_min    = 0
+    port_range_min    = 1
     port_range_max    = 65535
     protocol          = "tcp"
     remote_ip_prefix  = "0.0.0.0/0"

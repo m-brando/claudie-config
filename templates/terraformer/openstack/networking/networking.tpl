@@ -91,6 +91,7 @@
     ethertype         = "IPv4"
     port_range_min    = 0
     port_range_max    = 65535
+    protocol          = "tcp
     remote_ip_prefix  = "0.0.0.0/0"
     security_group_id = openstack_networking_secgroup_v2.{{ $securityGroupResourceName }}.id
   }
@@ -111,10 +112,11 @@
     provider          = openstack.nodepool_{{ $resourceSuffix }}
     region            = "{{ $rn.Region }}"
     direction         = "ingress"
+    ethertype         = "IPv4"
     port_range_min    = 51820
     port_range_max    = 51820
     protocol          = "udp"
-    cidr_blocks       = "0.0.0.0/0"
+    remote_ip_prefix  = "0.0.0.0/0"
     security_group_id = openstack_networking_secgroup_v2.{{ $securityGroupResourceName }}.id
   }
 
@@ -122,10 +124,11 @@
     provider          = openstack.nodepool_{{ $resourceSuffix }}
     region            = "{{ $rn.Region }}"
     direction         = "ingress"
+    ethertype         = "IPv4"
     port_range_min    = 8
     port_range_max    = 0
     protocol          = "icmp"
-    cidr_blocks       = "0.0.0.0/0"
+    remote_ip_prefix  = "0.0.0.0/0"
     security_group_id = openstack_networking_secgroup_v2.{{ $securityGroupResourceName }}.id
   }
 
@@ -151,10 +154,11 @@
         provider          = openstack.nodepool_{{ $resourceSuffix }}
         region            = "{{ $rn.Region }}"
         direction         = "ingress"
+        ethertype         = "IPv4"
         port_range_min    = {{ $role.Port }}
         port_range_max    = {{ $role.Port }}
         protocol          = "{{ $role.Protocol }}"
-        cidr_blocks       = "0.0.0.0/0"
+        remote_ip_prefix  = "0.0.0.0/0"
         security_group_id = openstack_networking_secgroup_v2.{{ $securityGroupResourceName }}.id
       }
     {{- end }}

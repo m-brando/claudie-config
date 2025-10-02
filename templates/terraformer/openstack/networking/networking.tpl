@@ -125,8 +125,6 @@
     region            = "{{ $rn.Region }}"
     direction         = "ingress"
     ethertype         = "IPv4"
-    port_range_min    = 8
-    port_range_max    = 8
     protocol          = "icmp"
     remote_ip_prefix  = "0.0.0.0/0"
     security_group_id = openstack_networking_secgroup_v2.{{ $securityGroupResourceName }}.id

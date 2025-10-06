@@ -92,8 +92,8 @@
           fi
 
       {{- if $isKubernetesCluster }}
-        # Create longhorn volume directory
-        mkdir -p /opt/claudie/data
+          # Create longhorn volume directory
+          mkdir -p /opt/claudie/data
         {{- /* Only Mount disk for Worker nodes that have a non-zero requested disk size */}}
         {{- if $isWorkerNodeWithDiskAttached }}
 

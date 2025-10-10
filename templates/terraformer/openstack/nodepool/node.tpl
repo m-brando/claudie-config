@@ -66,6 +66,12 @@
       }
       {{- end }}
 
+      lifecycle {
+        ignore_changes = [
+          block_device[0].uuid
+        ]
+      }
+
       user_data = <<-EOF
       #cloud-config
 

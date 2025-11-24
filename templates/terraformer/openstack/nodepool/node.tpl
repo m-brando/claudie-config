@@ -30,6 +30,7 @@
     resource "openstack_compute_instance_v2" "{{ $instanceResourceName }}"  {
       provider          = openstack.nodepool_{{ $resourceSuffix }}
       name              = "{{ $node.Name }}"
+      image_name        = "{{ $nodepool.Details.Image }}
       flavor_name       = "{{ $nodepool.Details.ServerType }}"
       availability_zone = "{{ $nodepool.Details.Zone }}"
       key_pair          = openstack_compute_keypair_v2.{{ $keypairResourceName }}.id
@@ -44,33 +45,6 @@
         "managed-by:Claudie",
         "claudie-cluster:{{ $clusterName }}-{{ $clusterHash }}"
       ]
-
-      {{- if $isKubernetesCluster }}
-      block_device {
-        uuid                  = "{{ $nodepool.Details.Image }}"
-        source_type           = "image"
-        destination_type      = "volume"
-        volume_size           = 100
-        boot_index            = 0
-        delete_on_termination = true
-        }
-      {{- end }}
-      {{- if $isLoadbalancerCluster }}
-      block_device {
-        uuid                  = "{{ $nodepool.Details.Image }}"
-        source_type           = "image"
-        destination_type      = "volume"
-        volume_size           = 50
-        boot_index            = 0
-        delete_on_termination = true
-      }
-      {{- end }}
-
-      lifecycle {
-        ignore_changes = [
-          block_device[0].uuid
-        ]
-      }
 
       user_data = <<-EOF
       #cloud-config

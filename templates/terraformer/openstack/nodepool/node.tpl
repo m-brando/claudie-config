@@ -30,7 +30,7 @@
     resource "openstack_compute_instance_v2" "{{ $instanceResourceName }}"  {
       provider          = openstack.nodepool_{{ $resourceSuffix }}
       name              = "{{ $node.Name }}"
-      image_name        = "{{ $nodepool.Details.Image }}
+      image_name        = "{{ $nodepool.Details.Image }}"
       flavor_name       = "{{ $nodepool.Details.ServerType }}"
       availability_zone = "{{ $nodepool.Details.Zone }}"
       key_pair          = openstack_compute_keypair_v2.{{ $keypairResourceName }}.id

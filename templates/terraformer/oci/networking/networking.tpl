@@ -20,6 +20,14 @@ locals {
 
 {{- $resourceSuffix := printf "%s_%s_%s" $region $specName $uniqueFingerPrint }}
 
+# Fetch available availability domains for the region
+# Note: Availability domains must be queried using the tenancy OCID (root compartment),
+# not a sub-compartment OCID, as ADs are tenancy-level resources.
+data "oci_identity_availability_domains" "available_{{ $resourceSuffix }}" {
+  provider       = oci.nodepool_{{ $resourceSuffix }}
+  compartment_id = "{{ $.Data.Provider.GetOci.TenancyOCID }}"
+}
+
 {{- if $isKubernetesCluster }}
     {{- $varStorageDiskName  := printf "oci_storage_disk_name_%s" $resourceSuffix }}
     variable "{{ $varStorageDiskName }}" {

@@ -41,6 +41,21 @@ resource "aws_key_pair" "{{ $keypairResourceName }}" {
         {{- $eipResourceName              := printf "%s_%s_eip" $node.Name $resourceSuffix }}
         {{- $eipAssocResourceName         := printf "%s_%s_eip_assoc" $node.Name $resourceSuffix }}
 
+        resource "aws_eip" "{{ $eipResourceName }}" {
+          provider = aws.nodepool_{{ $resourceSuffix }}
+
+          tags = {
+            Name            = "{{ $node.Name }}-eip"
+            Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
+          }
+        }
+
+        resource "aws_eip_association" "{{ $eipAssocResourceName }}" {
+          provider      = aws.nodepool_{{ $resourceSuffix }}
+          instance_id   = aws_instance.{{ $instanceResourceName }}.id
+          allocation_id = aws_eip.{{ $eipResourceName }}.id
+        }
+
         resource "aws_instance" "{{ $instanceResourceName }}" {
           provider          = aws.nodepool_{{ $resourceSuffix }}
         {{- if $nodepool.Details.Zone }}
@@ -138,21 +153,6 @@ fi
         {{- end }}
         }
         
-        resource "aws_eip" "{{ $eipResourceName }}" {
-          provider = aws.nodepool_{{ $resourceSuffix }}
-
-          tags = {
-            Name            = "{{ $node.Name }}-eip"
-            Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
-          }
-        }
-
-        resource "aws_eip_association" "{{ $eipAssocResourceName }}" {
-          provider      = aws.nodepool_{{ $resourceSuffix }}
-          instance_id   = aws_instance.{{ $instanceResourceName }}.id
-          allocation_id = aws_eip.{{ $eipResourceName }}.id
-        }
-
         {{- if $isKubernetesCluster }}
             {{- if $isWorkerNodeWithDiskAttached }}
 

@@ -10,7 +10,7 @@
 {{- $region         := $nodepool.Details.Region }}
 {{- $specName       := $nodepool.Details.Provider.SpecName }}
 {{- $resourceSuffix := printf "%s_%s_%s" $region $specName $uniqueFingerPrint }}
-
+{{- $internetGatewayResourceName := printf "claudie_gateway_%s" $resourceSuffix }}
 {{- $keypairResourceName  := printf "key_%s_%s" $nodepool.Name $resourceSuffix }}
 {{- $keypairName          := printf "key-%s-%s-%s" $nodepool.Name $clusterHash $specName }}
 
@@ -42,7 +42,9 @@ resource "aws_key_pair" "{{ $keypairResourceName }}" {
         {{- $eipAssocResourceName         := printf "%s_%s_eip_assoc" $node.Name $resourceSuffix }}
 
         resource "aws_eip" "{{ $eipResourceName }}" {
-          provider = aws.nodepool_{{ $resourceSuffix }}
+          provider   = aws.nodepool_{{ $resourceSuffix }}
+          depends_on = [aws_internet_gateway.{{ $internetGatewayResourceName }}]
+          domain     = "vpc"
 
           tags = {
             Name            = "{{ $node.Name }}-eip"

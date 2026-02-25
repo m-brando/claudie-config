@@ -7,17 +7,21 @@
 	{{- range $_, $alternativeName := .Data.AlternativeNamesExtension.Names }}
     {{- $recordResourceName := printf "record_%s_%s" $alternativeName $resourceSuffix }}
 
-    resource "cloudflare_record" "{{ $recordResourceName }}" {
-        provider = cloudflare.cloudflare_dns_{{ $resourceSuffix }}
-        zone_id = data.cloudflare_zone.cloudflare_zone_{{ $resourceSuffix }}.id
-        name = "{{ $alternativeName }}"
-        content = "{{ $.Data.Hostname }}.{{ $.Data.DNSZone }}"
-        type = "CNAME"
-        ttl = 300
+    resource "hcloud_zone_rrset" "{{ $recordResourceName }}" {
+        provider = hcloud.hetzner_dns_{{ $resourceSuffix }}
+        zone     = data.hcloud_zone.hetzner_zone_{{ $resourceSuffix }}.id
+        name     = "{{ $alternativeName }}"
+        type     = "CNAME"
+        ttl      = 300
+
+        records = [
+            {value = "{{ $.Data.Hostname }}.{{ $.Data.DNSZone }}."}
+        ]
     }
 
 	output "{{ $clusterID }}_{{ $alternativeName }}_{{ $resourceSuffix }}" {
 	  value = { "{{ $clusterID }}-{{ $alternativeName }}-endpoint" = format("%s.%s", "{{ $alternativeName }}", "{{ $.Data.DNSZone }}")}
 	}
+
 	{{- end }}
 {{- end }}

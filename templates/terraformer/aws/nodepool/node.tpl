@@ -90,7 +90,7 @@ resource "aws_key_pair" "{{ $keypairResourceName }}" {
 sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
 cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
-echo 'Port 2222' >> /etc/ssh/sshd_config && echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
 # The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
 sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
 ssh_active=$(systemctl is-active ssh 2>/dev/null || true)

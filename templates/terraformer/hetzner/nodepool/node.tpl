@@ -54,6 +54,8 @@
 #!/bin/bash
 # Configure custom SSH port
 echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
+# Need to daemon reload after ssh port changes
+systemctl daemon-reload
 sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
 ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
 if [ "$sshd_active" = "active" ]; then
@@ -90,8 +92,9 @@ EOF
           user_data = <<EOF
 #!/bin/bash
 # Configure custom SSH port
-sed -i 's/^#Port 22$/Port {{ $nodepool.SshPort }}/' /etc/ssh/sshd_config
-sed -i 's/^Port 22$/Port {{ $nodepool.SshPort }}/' /etc/ssh/sshd_config
+echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
+# Need to daemon reload after ssh port changes
+systemctl daemon-reload
 sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
 ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
 if [ "$sshd_active" = "active" ]; then

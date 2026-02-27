@@ -101,6 +101,7 @@ sudo sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/tem
 sudo cat /root/.ssh/temp > /root/.ssh/authorized_keys
 sudo rm /root/.ssh/temp
 sudo echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
+# Configure custom SSH port
 echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
 sshd_active=$(systemctl is-active sshd 2>/dev/null)
 if [ $sshd_active = 'active' ]; then
@@ -129,8 +130,7 @@ sudo cat /root/.ssh/temp > /root/.ssh/authorized_keys
 sudo rm /root/.ssh/temp
 sudo echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
 # Configure custom SSH port
-sudo sed -i 's/^#Port 22$/Port {{ $nodepool.SshPort }}/' /etc/ssh/sshd_config
-sudo sed -i 's/^Port 22$/Port {{ $nodepool.SshPort }}/' /etc/ssh/sshd_config
+echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
 # The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
 sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
 if [ $sshd_active = 'active' ]; then

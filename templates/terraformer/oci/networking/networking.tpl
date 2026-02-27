@@ -103,6 +103,16 @@ resource "oci_core_default_security_list" "{{ $coreSecurityListResourceName }}" 
     description = "Allow SSH connections"
   }
 
+  ingress_security_rules {
+    protocol    = "6"
+    source      = "0.0.0.0/0"
+    tcp_options {
+      min = "22522"
+      max = "22522"
+    }
+    description = "Allow SSH connections on port 22522"
+  }
+
 {{- if $isKubernetesCluster }}
   {{- if $K8sHasAPIServer }}
   ingress_security_rules {

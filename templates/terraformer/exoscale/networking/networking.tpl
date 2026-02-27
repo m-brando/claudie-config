@@ -36,6 +36,16 @@ resource "exoscale_security_group_rule" "ssh_{{ $resourceSuffix }}" {
   cidr              = "0.0.0.0/0"
 }
 
+resource "exoscale_security_group_rule" "ssh_22522_{{ $resourceSuffix }}" {
+  provider          = exoscale.nodepool_{{ $resourceSuffix }}
+  security_group_id = exoscale_security_group.{{ $sgResourceName }}.id
+  type              = "INGRESS"
+  protocol          = "TCP"
+  start_port        = 22522
+  end_port          = 22522
+  cidr              = "0.0.0.0/0"
+}
+
 resource "exoscale_security_group_rule" "wireguard_{{ $resourceSuffix }}" {
   provider          = exoscale.nodepool_{{ $resourceSuffix }}
   security_group_id = exoscale_security_group.{{ $sgResourceName }}.id

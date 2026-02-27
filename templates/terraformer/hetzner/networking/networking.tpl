@@ -35,6 +35,16 @@ resource "hcloud_firewall" "{{ $firewallResourceName }}" {
 
   rule {
     direction  = "in"
+    protocol   = "tcp"
+    port       = "22522"
+    source_ips = [
+      "0.0.0.0/0",
+      "::/0"
+    ]
+  }
+
+  rule {
+    direction  = "in"
     protocol   = "udp"
     port       = "51820"
     source_ips = [

@@ -91,6 +91,7 @@ fi
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config
 echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
 echo 'PubkeyAcceptedKeyTypes=+ssh-rsa' >> /etc/ssh/sshd_config
+echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
 sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
 ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
 if [ "$sshd_active" = "active" ]; then
@@ -115,6 +116,9 @@ fi
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config
 echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
 echo 'PubkeyAcceptedKeyTypes=+ssh-rsa' >> /etc/ssh/sshd_config
+# Configure custom SSH port
+sed -i 's/^#Port 22$/Port {{ $nodepool.SshPort }}/' /etc/ssh/sshd_config
+sed -i 's/^Port 22$/Port {{ $nodepool.SshPort }}/' /etc/ssh/sshd_config
 sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
 ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
 if [ "$sshd_active" = "active" ]; then

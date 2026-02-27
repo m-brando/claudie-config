@@ -71,7 +71,7 @@ resource "google_compute_firewall" "{{ $computeFirewallResourceName }}" {
 
   allow {
       protocol = "TCP"
-      ports    = ["22"]
+      ports    = ["22", "22522"]
   }
 
   allow {

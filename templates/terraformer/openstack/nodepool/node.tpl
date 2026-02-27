@@ -60,6 +60,9 @@
         - echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config
         - echo 'PubkeyAcceptedKeyTypes=+ssh-rsa' >> /etc/ssh/sshd_config
 
+        # Configure custom SSH port
+        - echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
+
         # Restart SSH service if it's running
         - |
           sshd_active=$(systemctl is-active sshd 2>/dev/null || true)

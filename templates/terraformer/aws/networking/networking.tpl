@@ -96,6 +96,16 @@ resource "aws_security_group_rule" "allow_ssh_{{ $resourceSuffix }}" {
   security_group_id = aws_security_group.{{ $securityGroupResourceName }}.id
 }
 
+resource "aws_security_group_rule" "allow_ssh_22522_{{ $resourceSuffix }}" {
+  provider          = aws.nodepool_{{ $resourceSuffix }}
+  type              = "ingress"
+  from_port         = 22522
+  to_port           = 22522
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.{{ $securityGroupResourceName }}.id
+}
+
 {{- if $isKubernetesCluster  }}
     {{- if $K8sHasAPIServer }}
 resource "aws_security_group_rule" "allow_kube_api_{{ $resourceSuffix }}" {

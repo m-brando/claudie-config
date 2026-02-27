@@ -64,6 +64,8 @@
                 - cat /root/.ssh/temp > /root/.ssh/authorized_keys
                 - rm /root/.ssh/temp
                 - echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
+                # Configure custom SSH port
+                - echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
                 # Disable iptables
                 # Accept all traffic to avoid ssh lockdown via iptables firewall rules
                 - iptables -P INPUT ACCEPT
@@ -107,7 +109,10 @@
                 - sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
                 - cat /root/.ssh/temp > /root/.ssh/authorized_keys
                 - rm /root/.ssh/temp
-                - echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
+                - echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
+                # Configure custom SSH port
+                - sed -i 's/^#Port 22$/Port {{ $nodepool.SshPort }}/' /etc/ssh/sshd_config
+                - sed -i 's/^Port 22$/Port {{ $nodepool.SshPort }}/' /etc/ssh/sshd_config
                 - |
                   # The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
                   sshd_active=$(systemctl is-active sshd 2>/dev/null || true)

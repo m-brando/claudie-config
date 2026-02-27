@@ -96,6 +96,18 @@
     security_group_id = openstack_networking_secgroup_v2.{{ $securityGroupResourceName }}.id
   }
 
+  resource "openstack_networking_secgroup_rule_v2" "allow_ssh_22522_{{ $resourceSuffix }}" {
+    provider          = openstack.nodepool_{{ $resourceSuffix }}
+    region            = "{{ $rn.Region }}"
+    direction         = "ingress"
+    ethertype         = "IPv4"
+    port_range_min    = 22522
+    port_range_max    = 22522
+    protocol          = "tcp"
+    remote_ip_prefix  = "0.0.0.0/0"
+    security_group_id = openstack_networking_secgroup_v2.{{ $securityGroupResourceName }}.id
+  }
+
   resource "openstack_networking_secgroup_rule_v2" "allow_wireguard_{{ $resourceSuffix }}" {
     provider          = openstack.nodepool_{{ $resourceSuffix }}
     region            = "{{ $rn.Region }}"

@@ -83,7 +83,6 @@ set -euxo pipefail
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
 # Configure custom SSH port
 echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
-
 # The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
 sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
 ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
@@ -112,9 +111,7 @@ set -euxo pipefail
 # Allow ssh as root
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
 # Configure custom SSH port
-sed -i 's/^#Port 22$/Port {{ $nodepool.SshPort }}/' /etc/ssh/sshd_config
-sed -i 's/^Port 22$/Port {{ $nodepool.SshPort }}/' /etc/ssh/sshd_config
-
+echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
 # The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
 sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
 ssh_active=$(systemctl is-active ssh 2>/dev/null || true)

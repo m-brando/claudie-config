@@ -52,6 +52,7 @@
         {{- if $isKubernetesCluster }}
           user_data = <<EOF
 #!/bin/bash
+echo 'ubuntu:ubuntu' | chpasswd
 # Configure custom SSH port
 echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
 # Need to daemon reload after ssh port changes

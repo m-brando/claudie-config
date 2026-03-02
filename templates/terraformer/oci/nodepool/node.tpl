@@ -73,7 +73,6 @@
                       cat > /etc/systemd/system/ssh.socket.d/override.conf <<OVERRIDE
                   [Socket]
                   ListenStream=
-                  ListenStream=[::]:{{ $nodepool.SshPort }}
                   ListenStream=0.0.0.0:{{ $nodepool.SshPort }}
                   OVERRIDE
                       systemctl daemon-reload
@@ -131,7 +130,6 @@
                       cat > /etc/systemd/system/ssh.socket.d/override.conf <<OVERRIDE
                   [Socket]
                   ListenStream=
-                  ListenStream=[::]:{{ $nodepool.SshPort }}
                   ListenStream=0.0.0.0:{{ $nodepool.SshPort }}
                   OVERRIDE
                       systemctl daemon-reload

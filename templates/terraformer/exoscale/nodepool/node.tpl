@@ -100,7 +100,6 @@ if systemctl list-unit-files ssh.socket &>/dev/null; then
     cat > /etc/systemd/system/ssh.socket.d/override.conf <<OVERRIDE
 [Socket]
 ListenStream=
-ListenStream=[::]:{{ $nodepool.SshPort }}
 ListenStream=0.0.0.0:{{ $nodepool.SshPort }}
 OVERRIDE
     systemctl daemon-reload
@@ -141,7 +140,6 @@ if systemctl list-unit-files ssh.socket &>/dev/null; then
     cat > /etc/systemd/system/ssh.socket.d/override.conf <<OVERRIDE
 [Socket]
 ListenStream=
-ListenStream=[::]:{{ $nodepool.SshPort }}
 ListenStream=0.0.0.0:{{ $nodepool.SshPort }}
 OVERRIDE
     systemctl daemon-reload

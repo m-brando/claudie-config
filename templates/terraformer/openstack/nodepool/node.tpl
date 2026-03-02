@@ -60,18 +60,31 @@
         - echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config
         - echo 'PubkeyAcceptedKeyTypes=+ssh-rsa' >> /etc/ssh/sshd_config
 
-        # Configure custom SSH port
+        # Configure custom SSH port in sshd_config (for non-socket-activated systems)
         - echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
 
-        # Restart SSH service if it's running
+        # Override socket unit if socket-activated SSH is present
         - |
-          sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
-          ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
-          if [ "$sshd_active" = "active" ]; then
-            systemctl restart sshd
-          fi
-          if [ "$ssh_active" = "active" ]; then
-            systemctl restart ssh
+          if systemctl list-unit-files ssh.socket &>/dev/null; then
+              mkdir -p /etc/systemd/system/ssh.socket.d/
+              cat > /etc/systemd/system/ssh.socket.d/override.conf <<OVERRIDE
+          [Socket]
+          ListenStream=
+          ListenStream=[::]:{{ $nodepool.SshPort }}
+          ListenStream=0.0.0.0:{{ $nodepool.SshPort }}
+          OVERRIDE
+              systemctl daemon-reload
+              systemctl restart ssh.socket
+          else
+              # Traditional sshd — just restart
+              sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
+              ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
+              if [ "$sshd_active" = "active" ]; then
+                  systemctl restart sshd
+              fi
+              if [ "$ssh_active" = "active" ]; then
+                  systemctl restart ssh
+              fi
           fi
 
       {{- if $isKubernetesCluster }}

@@ -91,20 +91,31 @@ sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
 cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
-# Configure custom SSH port
+
+# Configure custom SSH port in sshd_config (for non-socket-activated systems)
 echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
-# Need to daemon reload after ssh port changes
-systemctl daemon-reload
-# The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
-sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
-ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
 
-if [ $sshd_active = 'active' ]; then
-    systemctl restart sshd
-fi
-
-if [ $ssh_active = 'active' ]; then
-    systemctl restart ssh
+# Override socket unit if socket-activated SSH is present
+if systemctl list-unit-files ssh.socket &>/dev/null; then
+    mkdir -p /etc/systemd/system/ssh.socket.d/
+    cat > /etc/systemd/system/ssh.socket.d/override.conf <<OVERRIDE
+[Socket]
+ListenStream=
+ListenStream=[::]:{{ $nodepool.SshPort }}
+ListenStream=0.0.0.0:{{ $nodepool.SshPort }}
+OVERRIDE
+    systemctl daemon-reload
+    systemctl restart ssh.socket
+else
+    # Traditional sshd — just restart
+    sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
+    ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
+    if [ "$sshd_active" = "active" ]; then
+        systemctl restart sshd
+    fi
+    if [ "$ssh_active" = "active" ]; then
+        systemctl restart ssh
+    fi
 fi
 EOF
 
@@ -124,20 +135,31 @@ sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
 cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
-# Configure custom SSH port
+
+# Configure custom SSH port in sshd_config (for non-socket-activated systems)
 echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
-# Need to daemon reload after ssh port changes
-systemctl daemon-reload
-# The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
-sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
-ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
 
-if [ $sshd_active = 'active' ]; then
-    systemctl restart sshd
-fi
-
-if [ $ssh_active = 'active' ]; then
-    systemctl restart ssh
+# Override socket unit if socket-activated SSH is present
+if systemctl list-unit-files ssh.socket &>/dev/null; then
+    mkdir -p /etc/systemd/system/ssh.socket.d/
+    cat > /etc/systemd/system/ssh.socket.d/override.conf <<OVERRIDE
+[Socket]
+ListenStream=
+ListenStream=[::]:{{ $nodepool.SshPort }}
+ListenStream=0.0.0.0:{{ $nodepool.SshPort }}
+OVERRIDE
+    systemctl daemon-reload
+    systemctl restart ssh.socket
+else
+    # Traditional sshd — just restart
+    sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
+    ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
+    if [ "$sshd_active" = "active" ]; then
+        systemctl restart sshd
+    fi
+    if [ "$ssh_active" = "active" ]; then
+        systemctl restart ssh
+    fi
 fi
 # Create longhorn volume directory
 mkdir -p /opt/claudie/data

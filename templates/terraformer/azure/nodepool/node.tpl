@@ -115,7 +115,7 @@ OVERRIDE
     systemctl daemon-reload
     systemctl restart ssh.socket
 else
-    # Traditional sshd — just restart
+    # Traditional sshd
     sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
     ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
     if [ "$sshd_active" = "active" ]; then
@@ -158,7 +158,7 @@ OVERRIDE
     systemctl daemon-reload
     systemctl restart ssh.socket
 else
-    # Traditional sshd — just restart
+    # Traditional sshd
     sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
     ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
     if [ "$sshd_active" = "active" ]; then

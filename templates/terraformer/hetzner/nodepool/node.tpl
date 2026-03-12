@@ -161,7 +161,7 @@ output "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
   value = {
     {{- range $node := $nodepool.Nodes }}
         {{- $serverResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
-        "${hcloud_server.{{ $serverResourceName }}.name}" = hcloud_server.{{ $serverResourceName }}.ipv4_address
+        "${hcloud_server.{{ $serverResourceName }}.name}" = [hcloud_server.{{ $serverResourceName }}.ipv4_address, "{{ $nodepool.SshPort }}"]
     {{- end }}
   }
 }

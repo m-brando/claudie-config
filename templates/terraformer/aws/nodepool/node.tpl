@@ -218,7 +218,7 @@ output  "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
     {{- range $_, $node := $nodepool.Nodes }}
         {{- $instanceResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
         {{- $eipResourceName := printf "%s_%s_eip" $node.Name $resourceSuffix }}
-        "${aws_instance.{{ $instanceResourceName }}.tags_all.Name}" = aws_eip.{{ $eipResourceName }}.public_ip
+        "${aws_instance.{{ $instanceResourceName }}.tags_all.Name}" = [aws_eip.{{ $eipResourceName }}.public_ip, "{{ $nodepool.SshPort }}"]
     {{- end }}
   }
 }

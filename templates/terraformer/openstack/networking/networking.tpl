@@ -84,29 +84,19 @@
     ]
   }
 
-  resource "openstack_networking_secgroup_rule_v2" "allow_ssh_{{ $resourceSuffix }}" {
+{{- range $port := $.Data.SshPorts }}
+  resource "openstack_networking_secgroup_rule_v2" "allow_ssh_{{ $port }}_{{ $resourceSuffix }}" {
     provider          = openstack.nodepool_{{ $resourceSuffix }}
     region            = "{{ $rn.Region }}"
     direction         = "ingress"
     ethertype         = "IPv4"
-    port_range_min    = 22
-    port_range_max    = 22
+    port_range_min    = {{ $port }}
+    port_range_max    = {{ $port }}
     protocol          = "tcp"
     remote_ip_prefix  = "0.0.0.0/0"
     security_group_id = openstack_networking_secgroup_v2.{{ $securityGroupResourceName }}.id
   }
-
-  resource "openstack_networking_secgroup_rule_v2" "allow_ssh_22522_{{ $resourceSuffix }}" {
-    provider          = openstack.nodepool_{{ $resourceSuffix }}
-    region            = "{{ $rn.Region }}"
-    direction         = "ingress"
-    ethertype         = "IPv4"
-    port_range_min    = 22522
-    port_range_max    = 22522
-    protocol          = "tcp"
-    remote_ip_prefix  = "0.0.0.0/0"
-    security_group_id = openstack_networking_secgroup_v2.{{ $securityGroupResourceName }}.id
-  }
+{{- end }}
 
   resource "openstack_networking_secgroup_rule_v2" "allow_wireguard_{{ $resourceSuffix }}" {
     provider          = openstack.nodepool_{{ $resourceSuffix }}

@@ -222,7 +222,7 @@ EOF
       {{- range $node := $nodepool.Nodes }}
         {{- $computeInstanceResourceName  := printf "%s_%s" $node.Name $resourceSuffix }}
 
-        "${google_compute_instance.{{ $computeInstanceResourceName }}.name}" = google_compute_instance.{{ $computeInstanceResourceName }}.network_interface.0.access_config.0.nat_ip
+        "${google_compute_instance.{{ $computeInstanceResourceName }}.name}" = [google_compute_instance.{{ $computeInstanceResourceName }}.network_interface.0.access_config.0.nat_ip, "{{ $nodepool.SshPort }}"]
 
       {{- end }}
       }

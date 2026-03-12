@@ -78,29 +78,19 @@ resource "azurerm_network_security_group" "{{ $networkSecurityGroupResourceName 
   location            = "{{ $region }}"
   resource_group_name = azurerm_resource_group.{{ $resourceGroupResourceName }}.name
 
+{{- range $i, $port := .Data.SshPorts }}
   security_rule {
-    name                       = "SSH"
-    priority                   = 101
+    name                       = "SSH-{{ $port }}"
+    priority                   = {{ add 101 $i }}
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_range     = "22"
+    destination_port_range     = "{{ $port }}"
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
-
-  security_rule {
-    name                       = "SSH-22522"
-    priority                   = 104
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "22522"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
+{{- end }}
 
   security_rule {
     name                       = "Wireguard"

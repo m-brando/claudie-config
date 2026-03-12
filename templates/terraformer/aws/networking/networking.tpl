@@ -86,25 +86,17 @@ resource "aws_security_group_rule" "allow_egress_{{ $resourceSuffix }}" {
 }
 
 
-resource "aws_security_group_rule" "allow_ssh_{{ $resourceSuffix }}" {
+{{- range $port := .Data.SshPorts }}
+resource "aws_security_group_rule" "allow_ssh_{{ $port }}_{{ $resourceSuffix }}" {
   provider          = aws.nodepool_{{ $resourceSuffix }}
   type              = "ingress"
-  from_port         = 22
-  to_port           = 22
+  from_port         = {{ $port }}
+  to_port           = {{ $port }}
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.{{ $securityGroupResourceName }}.id
 }
-
-resource "aws_security_group_rule" "allow_ssh_22522_{{ $resourceSuffix }}" {
-  provider          = aws.nodepool_{{ $resourceSuffix }}
-  type              = "ingress"
-  from_port         = 22522
-  to_port           = 22522
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.{{ $securityGroupResourceName }}.id
-}
+{{- end }}
 
 {{- if $isKubernetesCluster  }}
     {{- if $K8sHasAPIServer }}

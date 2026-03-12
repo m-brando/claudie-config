@@ -224,7 +224,7 @@ output "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
   value = {
   {{- range $node := $nodepool.Nodes }}
         {{- $coreInstanceResourceName     := printf "%s_%s" $node.Name $resourceSuffix }}
-        "${oci_core_instance.{{ $coreInstanceResourceName }}.display_name}" = oci_core_instance.{{ $coreInstanceResourceName }}.public_ip
+        "${oci_core_instance.{{ $coreInstanceResourceName }}.display_name}" = [oci_core_instance.{{ $coreInstanceResourceName }}.public_ip, "{{ $nodepool.SshPort }}"]
   {{- end }}
   }
 }

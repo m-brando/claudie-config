@@ -188,7 +188,7 @@ output "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
   value = {
     {{- range $node := $nodepool.Nodes }}
         {{- $serverResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
-        "${exoscale_compute_instance.{{ $serverResourceName }}.name}" = exoscale_compute_instance.{{ $serverResourceName }}.public_ip_address
+        "${exoscale_compute_instance.{{ $serverResourceName }}.name}" = [exoscale_compute_instance.{{ $serverResourceName }}.public_ip_address, "{{ $nodepool.SshPort }}"]
     {{- end }}
   }
 }

@@ -237,7 +237,7 @@ output "{{ $nodepool.Name }}_{{ $nodepoolSpecName }}_{{ $uniqueFingerPrint }}" {
     {{- range $node := $nodepool.Nodes }}
         {{- $virtualMachineResourceName   := printf "%s_%s" $node.Name $resourceSuffix }}
         {{- $publicIPResourceName         := printf "%s_%s_public_ip" $node.Name $resourceSuffix }}
-        "${azurerm_linux_virtual_machine.{{ $virtualMachineResourceName }}.name}" = azurerm_public_ip.{{ $publicIPResourceName }}.ip_address
+        "${azurerm_linux_virtual_machine.{{ $virtualMachineResourceName }}.name}" = [azurerm_public_ip.{{ $publicIPResourceName }}.ip_address, "{{ $nodepool.SshPort }}"]
     {{- end }}
   }
 }

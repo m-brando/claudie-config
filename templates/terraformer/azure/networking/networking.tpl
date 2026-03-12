@@ -78,7 +78,7 @@ resource "azurerm_network_security_group" "{{ $networkSecurityGroupResourceName 
   location            = "{{ $region }}"
   resource_group_name = azurerm_resource_group.{{ $resourceGroupResourceName }}.name
 
-{{- range $i, $port := .Data.SshPorts }}
+{{- range $i, $port := $.Data.SshPorts }}
   security_rule {
     name                       = "SSH-{{ $port }}"
     priority                   = {{ add 101 $i }}

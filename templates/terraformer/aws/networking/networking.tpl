@@ -86,7 +86,7 @@ resource "aws_security_group_rule" "allow_egress_{{ $resourceSuffix }}" {
 }
 
 
-{{- range $port := .Data.SshPorts }}
+{{- range $port := $.Data.SshPorts }}
 resource "aws_security_group_rule" "allow_ssh_{{ $port }}_{{ $resourceSuffix }}" {
   provider          = aws.nodepool_{{ $resourceSuffix }}
   type              = "ingress"

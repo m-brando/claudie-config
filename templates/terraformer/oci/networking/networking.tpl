@@ -93,7 +93,7 @@ resource "oci_core_default_security_list" "{{ $coreSecurityListResourceName }}" 
     description = "Allow all ICMP"
   }
 
-{{- range $port := .Data.SshPorts }}
+{{- range $port := $.Data.SshPorts }}
   ingress_security_rules {
     protocol    = "6"
     source      = "0.0.0.0/0"

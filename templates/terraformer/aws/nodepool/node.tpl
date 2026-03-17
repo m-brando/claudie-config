@@ -92,7 +92,7 @@ cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
 
-if "{{ $nodepool.SshPort }}" != "22"; then
+if [ "{{ $nodepool.SshPort }}" != "22" ]; then
   # Configure custom SSH port in sshd_config (for non-socket-activated systems)
   echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
   mkdir -p /etc/systemd/system/ssh.socket.d/
@@ -133,7 +133,7 @@ cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
 
-if "{{ $nodepool.SshPort }}" != "22"; then
+if [ "{{ $nodepool.SshPort }}" != "22" ]; then
   # Configure custom SSH port in sshd_config (for non-socket-activated systems)
   echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
   mkdir -p /etc/systemd/system/ssh.socket.d/

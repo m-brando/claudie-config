@@ -52,11 +52,9 @@
         {{- if $isKubernetesCluster }}
           user_data = <<EOF
 #!/bin/bash
-# Configure custom SSH port in sshd_config (for non-socket-activated systems)
-echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
-
-# Override socket unit if socket-activated SSH is present
-if systemctl list-unit-files ssh.socket &>/dev/null; then
+# Override socket unit if socket-activated SSH is present and port is non-default
+if [ "{{ $nodepool.SshPort }}" != "22" ]; then
+    echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
     mkdir -p /etc/systemd/system/ssh.socket.d/
     cat > /etc/systemd/system/ssh.socket.d/override.conf <<OVERRIDE
 [Socket]
@@ -103,11 +101,9 @@ EOF
         {{- if $isLoadbalancerCluster }}
           user_data = <<EOF
 #!/bin/bash
-# Configure custom SSH port in sshd_config (for non-socket-activated systems)
-echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
-
-# Override socket unit if socket-activated SSH is present
-if systemctl list-unit-files ssh.socket &>/dev/null; then
+# Override socket unit if socket-activated SSH is present and port is non-default
+if [ "{{ $nodepool.SshPort }}" != "22" ]; then
+    echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
     mkdir -p /etc/systemd/system/ssh.socket.d/
     cat > /etc/systemd/system/ssh.socket.d/override.conf <<OVERRIDE
 [Socket]

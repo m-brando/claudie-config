@@ -96,7 +96,7 @@ resource "aws_key_pair" "{{ $keypairResourceName }}" {
               # Configure custom SSH port in sshd_config (for non-socket-activated systems)
               echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
               mkdir -p /etc/systemd/system/ssh.socket.d/
-              cat > /etc/systemd/system/ssh.socket.d/override.conf <<OVERRIDE
+              cat > /etc/systemd/system/ssh.socket.d/override.conf <<-OVERRIDE
               [Socket]
               ListenStream=
               ListenStream=0.0.0.0:{{ $nodepool.SshPort }}
@@ -144,14 +144,14 @@ resource "aws_key_pair" "{{ $keypairResourceName }}" {
               # Configure custom SSH port in sshd_config (for non-socket-activated systems)
               echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
               mkdir -p /etc/systemd/system/ssh.socket.d/
-              cat > /etc/systemd/system/ssh.socket.d/override.conf <<OVERRIDE
+              cat > /etc/systemd/system/ssh.socket.d/override.conf <<-OVERRIDE
               [Socket]
               ListenStream=
               ListenStream=0.0.0.0:{{ $nodepool.SshPort }}
               OVERRIDE
               systemctl daemon-reload
               systemctl restart ssh.socket
-              EOF
+              
           {{- else }}
             user_data = <<-EOF
               #!/bin/bash
@@ -170,30 +170,29 @@ resource "aws_key_pair" "{{ $keypairResourceName }}" {
               if [ "$ssh_active" = "active" ]; then
                   systemctl restart ssh
               fi
-              EOF
+              
           {{- end }}
-        {{- end }}
-        
-# Create longhorn volume directory
-mkdir -p /opt/claudie/data
 
-            {{- if $isWorkerNodeWithDiskAttached }}
+          # Create longhorn volume directory
+          mkdir -p /opt/claudie/data
 
-# Mount EBS volume only when not mounted yet
-sleep 50
-disk=$(ls -l /dev/disk/by-id | grep "${replace("${aws_ebs_volume.{{ $volumeResourceName }}.id}", "-", "")}" | awk '{print $NF}')
-disk=$(basename "$disk")
-if ! grep -qs "/dev/$disk" /proc/mounts; then
-  if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
-    mkfs.xfs /dev/$disk
-  fi
-  mount /dev/$disk /opt/claudie/data
-  echo "/dev/$disk /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
-fi
+          {{- if $isWorkerNodeWithDiskAttached }}
 
-            {{- end }}
+            # Mount EBS volume only when not mounted yet
+            sleep 50
+            disk=$(ls -l /dev/disk/by-id | grep "${replace("${aws_ebs_volume.{{ $volumeResourceName }}.id}", "-", "")}" | awk '{print $NF}')
+            disk=$(basename "$disk")
+            if ! grep -qs "/dev/$disk" /proc/mounts; then
+              if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
+                mkfs.xfs /dev/$disk
+              fi
+              mount /dev/$disk /opt/claudie/data
+              echo "/dev/$disk /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
+            fi
 
-        EOF
+          {{- end }}
+
+            EOF
 
         {{- end }}
         }

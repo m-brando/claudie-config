@@ -85,44 +85,42 @@ resource "aws_key_pair" "{{ $keypairResourceName }}" {
           }
 
           {{- if ne $nodepool.SshPort 22 }}
-            user_data = <<-EOF
-              #!/bin/bash
-              # Allow ssh connection for root
-              sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
-              cat /root/.ssh/temp > /root/.ssh/authorized_keys
-              rm /root/.ssh/temp
-              echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> /etc/ssh/sshd_config
-
-              # Configure custom SSH port in sshd_config (for non-socket-activated systems)
-              echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
-              mkdir -p /etc/systemd/system/ssh.socket.d/
-              cat > /etc/systemd/system/ssh.socket.d/override.conf <<-OVERRIDE
-              [Socket]
-              ListenStream=
-              ListenStream=0.0.0.0:{{ $nodepool.SshPort }}
-              OVERRIDE
-              systemctl daemon-reload
-              systemctl restart ssh.socket
-              EOF
+            user_data = <<EOF
+#!/bin/bash
+# Allow ssh connection for root
+sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
+cat /root/.ssh/temp > /root/.ssh/authorized_keys
+rm /root/.ssh/temp
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> /etc/ssh/sshd_
+# Configure custom SSH port in sshd_config (for non-socket-activated systems)
+echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
+mkdir -p /etc/systemd/system/ssh.socket.d/
+cat > /etc/systemd/system/ssh.socket.d/override.conf <<-OVERRIDE
+[Socket]
+ListenStream=
+ListenStream=0.0.0.0:{{ $nodepool.SshPort }}
+OVERRIDE
+systemctl daemon-reload
+systemctl restart ssh.socket
+EOF
           {{- else }}
             user_data = <<-EOF
-              #!/bin/bash
-              # Allow ssh connection for root
-              sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
-              cat /root/.ssh/temp > /root/.ssh/authorized_keys
-              rm /root/.ssh/temp
-              echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> /etc/ssh/sshd_config
-
-              # Traditional sshd
-              sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
-              ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
-              if [ "$sshd_active" = "active" ]; then
-                  systemctl restart sshd
-              fi
-              if [ "$ssh_active" = "active" ]; then
-                  systemctl restart ssh
-              fi
-              EOF
+#!/bin/bash
+# Allow ssh connection for root
+sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
+cat /root/.ssh/temp > /root/.ssh/authorized_keys
+rm /root/.ssh/temp
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> /etc/ssh/sshd_config
+# Traditional sshd
+sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
+ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
+if [ "$sshd_active" = "active" ]; then
+    systemctl restart sshd
+fi
+if [ "$ssh_active" = "active" ]; then
+    systemctl restart ssh
+fi
+EOF
           {{- end }}
         {{- end }}
 
@@ -134,47 +132,45 @@ resource "aws_key_pair" "{{ $keypairResourceName }}" {
           }
           {{- if ne $nodepool.SshPort 22 }}
             user_data = <<-EOF
-              #!/bin/bash
-              # Allow ssh connection for root
-              sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
-              cat /root/.ssh/temp > /root/.ssh/authorized_keys
-              rm /root/.ssh/temp
-              echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> /etc/ssh/sshd_config
-
-              # Configure custom SSH port in sshd_config (for non-socket-activated systems)
-              echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
-              mkdir -p /etc/systemd/system/ssh.socket.d/
-              cat > /etc/systemd/system/ssh.socket.d/override.conf <<-OVERRIDE
-              [Socket]
-              ListenStream=
-              ListenStream=0.0.0.0:{{ $nodepool.SshPort }}
-              OVERRIDE
-              systemctl daemon-reload
-              systemctl restart ssh.socket
+#!/bin/bash
+# Allow ssh connection for root
+sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
+cat /root/.ssh/temp > /root/.ssh/authorized_keys
+rm /root/.ssh/temp
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> /etc/ssh/sshd_config
+# Configure custom SSH port in sshd_config (for non-socket-activated systems)
+echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
+mkdir -p /etc/systemd/system/ssh.socket.d/
+cat > /etc/systemd/system/ssh.socket.d/override.conf <<-OVERRIDE
+[Socket]
+ListenStream=
+ListenStream=0.0.0.0:{{ $nodepool.SshPort }}
+OVERRIDE
+systemctl daemon-reload
+systemctl restart ssh.socket
               
           {{- else }}
             user_data = <<-EOF
-              #!/bin/bash
-              # Allow ssh connection for root
-              sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
-              cat /root/.ssh/temp > /root/.ssh/authorized_keys
-              rm /root/.ssh/temp
-              echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> /etc/ssh/sshd_config
-
-              # Traditional sshd
-              sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
-              ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
-              if [ "$sshd_active" = "active" ]; then
-                  systemctl restart sshd
-              fi
-              if [ "$ssh_active" = "active" ]; then
-                  systemctl restart ssh
-              fi
+#!/bin/bash
+# Allow ssh connection for root
+sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
+cat /root/.ssh/temp > /root/.ssh/authorized_keys
+rm /root/.ssh/temp
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> /etc/ssh/sshd_config
+# Traditional sshd
+sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
+ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
+if [ "$sshd_active" = "active" ]; then
+    systemctl restart sshd
+fi
+if [ "$ssh_active" = "active" ]; then
+    systemctl restart ssh
+fi
               
           {{- end }}
 
-          # Create longhorn volume directory
-          mkdir -p /opt/claudie/data
+# Create longhorn volume directory
+mkdir -p /opt/claudie/data
 
           {{- if $isWorkerNodeWithDiskAttached }}
 

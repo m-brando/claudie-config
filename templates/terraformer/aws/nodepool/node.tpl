@@ -132,38 +132,48 @@ resource "aws_key_pair" "{{ $keypairResourceName }}" {
             delete_on_termination = true
             volume_type           = "gp2"
           }
-          user_data = <<EOF
-#!/bin/bash
-set -euxo pipefail
-# Allow ssh connection for root
-sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
-cat /root/.ssh/temp > /root/.ssh/authorized_keys
-rm /root/.ssh/temp
-echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
+          {{- if ne $nodepool.SshPort 22 }}
+            user_data = <<-EOF
+              #!/bin/bash
+              # Allow ssh connection for root
+              sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
+              cat /root/.ssh/temp > /root/.ssh/authorized_keys
+              rm /root/.ssh/temp
+              echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> /etc/ssh/sshd_config
 
-if [ "{{ $nodepool.SshPort }}" != "22" ]; then
-  # Configure custom SSH port in sshd_config (for non-socket-activated systems)
-  echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
-  mkdir -p /etc/systemd/system/ssh.socket.d/
-  cat > /etc/systemd/system/ssh.socket.d/override.conf <<OVERRIDE
-[Socket]
-ListenStream=
-ListenStream=0.0.0.0:{{ $nodepool.SshPort }}
-OVERRIDE
-    systemctl daemon-reload
-    systemctl restart ssh.socket
-else
-    # Traditional sshd
-    sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
-    ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
-    if [ "$sshd_active" = "active" ]; then
-        systemctl restart sshd
-    fi
-    if [ "$ssh_active" = "active" ]; then
-        systemctl restart ssh
-    fi
-fi
-EOF
+              # Configure custom SSH port in sshd_config (for non-socket-activated systems)
+              echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
+              mkdir -p /etc/systemd/system/ssh.socket.d/
+              cat > /etc/systemd/system/ssh.socket.d/override.conf <<OVERRIDE
+              [Socket]
+              ListenStream=
+              ListenStream=0.0.0.0:{{ $nodepool.SshPort }}
+              OVERRIDE
+              systemctl daemon-reload
+              systemctl restart ssh.socket
+              EOF
+          {{- else }}
+            user_data = <<-EOF
+              #!/bin/bash
+              # Allow ssh connection for root
+              sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
+              cat /root/.ssh/temp > /root/.ssh/authorized_keys
+              rm /root/.ssh/temp
+              echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> /etc/ssh/sshd_config
+
+              # Traditional sshd
+              sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
+              ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
+              if [ "$sshd_active" = "active" ]; then
+                  systemctl restart sshd
+              fi
+              if [ "$ssh_active" = "active" ]; then
+                  systemctl restart ssh
+              fi
+              EOF
+          {{- end }}
+        {{- end }}
+        
 # Create longhorn volume directory
 mkdir -p /opt/claudie/data
 

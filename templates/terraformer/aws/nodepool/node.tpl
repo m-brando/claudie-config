@@ -91,7 +91,7 @@ resource "aws_key_pair" "{{ $keypairResourceName }}" {
 sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
 cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
-echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> /etc/ssh/sshd_
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
 # Configure custom SSH port in sshd_config (for non-socket-activated systems)
 echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
 mkdir -p /etc/systemd/system/ssh.socket.d/
@@ -104,20 +104,22 @@ systemctl daemon-reload
 systemctl restart ssh.socket
 EOF
           {{- else }}
-            user_data = <<-EOF
+          user_data = <<EOF
 #!/bin/bash
 # Allow ssh connection for root
 sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
 cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
-echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> /etc/ssh/sshd_config
-# Traditional sshd
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
+# The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
 sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
 ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
-if [ "$sshd_active" = "active" ]; then
+
+if [ $sshd_active = 'active' ]; then
     systemctl restart sshd
 fi
-if [ "$ssh_active" = "active" ]; then
+
+if [ $ssh_active = 'active' ]; then
     systemctl restart ssh
 fi
 EOF
@@ -131,64 +133,67 @@ EOF
             volume_type           = "gp2"
           }
           {{- if ne $nodepool.SshPort 22 }}
-            user_data = <<-EOF
+          user_data = <<EOF
 #!/bin/bash
+set -euxo pipefail
 # Allow ssh connection for root
 sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
 cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
-echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> /etc/ssh/sshd_config
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
 # Configure custom SSH port in sshd_config (for non-socket-activated systems)
 echo "Port {{ $nodepool.SshPort }}" >> /etc/ssh/sshd_config
 mkdir -p /etc/systemd/system/ssh.socket.d/
-cat > /etc/systemd/system/ssh.socket.d/override.conf <<-OVERRIDE
+cat > /etc/systemd/system/ssh.socket.d/override.conf <<OVERRIDE
 [Socket]
 ListenStream=
 ListenStream=0.0.0.0:{{ $nodepool.SshPort }}
 OVERRIDE
 systemctl daemon-reload
 systemctl restart ssh.socket
-              
+# Create longhorn volume directory
+mkdir -p /opt/claudie/data
           {{- else }}
-            user_data = <<-EOF
+          user_data = <<EOF
 #!/bin/bash
+set -euxo pipefail
 # Allow ssh connection for root
 sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
 cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
-echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> /etc/ssh/sshd_config
-# Traditional sshd
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
+# The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
 sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
 ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
-if [ "$sshd_active" = "active" ]; then
+
+if [ $sshd_active = 'active' ]; then
     systemctl restart sshd
 fi
-if [ "$ssh_active" = "active" ]; then
+
+if [ $ssh_active = 'active' ]; then
     systemctl restart ssh
 fi
-              
-          {{- end }}
-
 # Create longhorn volume directory
 mkdir -p /opt/claudie/data
-
-          {{- if $isWorkerNodeWithDiskAttached }}
-
-            # Mount EBS volume only when not mounted yet
-            sleep 50
-            disk=$(ls -l /dev/disk/by-id | grep "${replace("${aws_ebs_volume.{{ $volumeResourceName }}.id}", "-", "")}" | awk '{print $NF}')
-            disk=$(basename "$disk")
-            if ! grep -qs "/dev/$disk" /proc/mounts; then
-              if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
-                mkfs.xfs /dev/$disk
-              fi
-              mount /dev/$disk /opt/claudie/data
-              echo "/dev/$disk /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
-            fi
-
           {{- end }}
 
-            EOF
+            {{- if $isWorkerNodeWithDiskAttached }}
+
+# Mount EBS volume only when not mounted yet
+sleep 50
+disk=$(ls -l /dev/disk/by-id | grep "${replace("${aws_ebs_volume.{{ $volumeResourceName }}.id}", "-", "")}" | awk '{print $NF}')
+disk=$(basename "$disk")
+if ! grep -qs "/dev/$disk" /proc/mounts; then
+  if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
+    mkfs.xfs /dev/$disk
+  fi
+  mount /dev/$disk /opt/claudie/data
+  echo "/dev/$disk /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
+fi
+
+            {{- end }}
+
+        EOF
 
         {{- end }}
         }

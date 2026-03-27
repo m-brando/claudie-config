@@ -91,14 +91,14 @@ sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
 cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
-{{- if ne $sshPort 22 }}
+{{- if ne $nodepool.Details.SshPort 22 }}
 # Configure custom SSH port
-echo "Port {{ $sshPort }}" >> /etc/ssh/sshd_config
+echo "Port {{ $nodepool.Details.SshPort }}" >> /etc/ssh/sshd_config
 mkdir -p /etc/systemd/system/ssh.socket.d
 cat <<SSHEOF > /etc/systemd/system/ssh.socket.d/override.conf
 [Socket]
 ListenStream=
-ListenStream=0.0.0.0:{{ $sshPort }}
+ListenStream=0.0.0.0:{{ $nodepool.Details.SshPort }}
 SSHEOF
 systemctl daemon-reload
 {{- end }}
@@ -131,14 +131,14 @@ sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
 cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
-{{- if ne $sshPort 22 }}
+{{- if ne $nodepool.Details.SshPort 22 }}
 # Configure custom SSH port
-echo "Port {{ $sshPort }}" >> /etc/ssh/sshd_config
+echo "Port {{ $nodepool.Details.SshPort }}" >> /etc/ssh/sshd_config
 mkdir -p /etc/systemd/system/ssh.socket.d
 cat <<SSHEOF > /etc/systemd/system/ssh.socket.d/override.conf
 [Socket]
 ListenStream=
-ListenStream=0.0.0.0:{{ $sshPort }}
+ListenStream=0.0.0.0:{{ $nodepool.Details.SshPort }}
 SSHEOF
 systemctl daemon-reload
 {{- end }}

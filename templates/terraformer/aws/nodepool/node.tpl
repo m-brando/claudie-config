@@ -101,6 +101,7 @@ ListenStream=
 ListenStream=0.0.0.0:{{ $nodepool.Details.SshPort }}
 SSHEOF
 systemctl daemon-reload
+systemctl restart ssh.socket
 {{- end }}
 # The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
 sshd_active=$(systemctl is-active sshd 2>/dev/null || true)

@@ -20,7 +20,9 @@ locals {
 iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 iptables -A INPUT -i lo -j ACCEPT
 # Allow SSH
-iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+{{- range $port := $.Data.SshPorts }}
+iptables -A INPUT -p tcp --dport {{ $port }} -j ACCEPT
+{{- end }}
 # Allow WireGuard
 iptables -A INPUT -p udp --dport 51820 -j ACCEPT
 {{- if $isKubernetesCluster }}

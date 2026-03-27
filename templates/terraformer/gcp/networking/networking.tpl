@@ -69,10 +69,12 @@ resource "google_compute_firewall" "{{ $computeFirewallResourceName }}" {
     ports    = ["51820"]
   }
 
+{{- range $port := $.Data.SshPorts }}
   allow {
       protocol = "TCP"
-      ports    = ["22"]
+      ports    = ["{{ $port }}"]
   }
+{{- end }}
 
   allow {
       protocol = "icmp"

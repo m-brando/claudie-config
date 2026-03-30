@@ -52,12 +52,12 @@
           user_data = <<EOF
 #!/bin/bash
 # Configure SSH port
-echo "Port 22522" >> /etc/ssh/sshd_config
+echo "Port ${local.claudie_ssh_port_{{ $resourceSuffix }}}" >> /etc/ssh/sshd_config
 mkdir -p /etc/systemd/system/ssh.socket.d
 cat <<SSHEOF > /etc/systemd/system/ssh.socket.d/override.conf
 [Socket]
 ListenStream=
-ListenStream=0.0.0.0:22522
+ListenStream=0.0.0.0:${local.claudie_ssh_port_{{ $resourceSuffix }}}
 SSHEOF
 systemctl daemon-reload
 systemctl restart ssh.socket
@@ -116,7 +116,7 @@ output "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
   value = {
     {{- range $node := $nodepool.Nodes }}
         {{- $serverResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
-        "${hcloud_server.{{ $serverResourceName }}.name}" = [hcloud_server.{{ $serverResourceName }}.ipv4_address, "22522"]
+        "${hcloud_server.{{ $serverResourceName }}.name}" = [hcloud_server.{{ $serverResourceName }}.ipv4_address, tostring(local.claudie_ssh_port_{{ $resourceSuffix }})]
     {{- end }}
   }
 }

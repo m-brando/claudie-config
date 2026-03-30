@@ -61,13 +61,13 @@
         - echo 'PubkeyAcceptedKeyTypes=+ssh-rsa' >> /etc/ssh/sshd_config
 
         # Configure SSH port
-        - echo "Port 22522" >> /etc/ssh/sshd_config
+        - echo "Port ${local.claudie_ssh_port_{{ $resourceSuffix }}}" >> /etc/ssh/sshd_config
         - mkdir -p /etc/systemd/system/ssh.socket.d
         - |
           cat <<SSHEOF > /etc/systemd/system/ssh.socket.d/override.conf
           [Socket]
           ListenStream=
-          ListenStream=0.0.0.0:22522
+          ListenStream=0.0.0.0:${local.claudie_ssh_port_{{ $resourceSuffix }}}
           SSHEOF
         - systemctl daemon-reload
         - systemctl restart ssh.socket
@@ -162,7 +162,7 @@
         {{- $instanceResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
         {{- $fipResourceName      := printf "fip_%s_%s" $node.Name $resourceSuffix }}
         {{- $fipAssociateName     := printf "fip_associate_%s_%s" $node.Name $resourceSuffix }}
-        "${openstack_compute_instance_v2.{{ $instanceResourceName }}.name}" = [openstack_networking_floatingip_associate_v2.{{ $fipAssociateName }}.floating_ip, "22522"]
+        "${openstack_compute_instance_v2.{{ $instanceResourceName }}.name}" = [openstack_networking_floatingip_associate_v2.{{ $fipAssociateName }}.floating_ip, tostring(local.claudie_ssh_port_{{ $resourceSuffix }})]
       {{- end }}
     }
 }

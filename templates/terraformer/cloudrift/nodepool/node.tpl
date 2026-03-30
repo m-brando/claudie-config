@@ -44,12 +44,12 @@ echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config
 echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
 echo 'PubkeyAcceptedKeyTypes=+ssh-rsa' >> /etc/ssh/sshd_config
 # Configure SSH port
-echo "Port {{ $nodepool.Details.SshPort }}" >> /etc/ssh/sshd_config
+echo "Port 22522" >> /etc/ssh/sshd_config
 mkdir -p /etc/systemd/system/ssh.socket.d
 cat <<SSHEOF > /etc/systemd/system/ssh.socket.d/override.conf
 [Socket]
 ListenStream=
-ListenStream=0.0.0.0:{{ $nodepool.Details.SshPort }}
+ListenStream=0.0.0.0:22522
 SSHEOF
 systemctl daemon-reload
 systemctl restart ssh.socket
@@ -88,7 +88,7 @@ output "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
   value = {
     {{- range $node := $nodepool.Nodes }}
         {{- $serverResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
-        "{{ $node.Name }}" = [cloudrift_virtual_machine.{{ $serverResourceName }}.public_ip, "{{ $nodepool.SshPort }}"]
+        "{{ $node.Name }}" = [cloudrift_virtual_machine.{{ $serverResourceName }}.public_ip, "22522"]
     {{- end }}
   }
 }

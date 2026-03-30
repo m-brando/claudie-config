@@ -92,12 +92,12 @@ cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
 # Configure SSH port
-echo "Port {{ $nodepool.Details.SshPort }}" >> /etc/ssh/sshd_config
+echo "Port 22522" >> /etc/ssh/sshd_config
 mkdir -p /etc/systemd/system/ssh.socket.d
 cat <<SSHEOF > /etc/systemd/system/ssh.socket.d/override.conf
 [Socket]
 ListenStream=
-ListenStream=0.0.0.0:{{ $nodepool.Details.SshPort }}
+ListenStream=0.0.0.0:22522
 SSHEOF
 systemctl daemon-reload
 systemctl restart ssh.socket
@@ -131,12 +131,12 @@ cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
 # Configure SSH port
-echo "Port {{ $nodepool.Details.SshPort }}" >> /etc/ssh/sshd_config
+echo "Port 22522" >> /etc/ssh/sshd_config
 mkdir -p /etc/systemd/system/ssh.socket.d
 cat <<SSHEOF > /etc/systemd/system/ssh.socket.d/override.conf
 [Socket]
 ListenStream=
-ListenStream=0.0.0.0:{{ $nodepool.Details.SshPort }}
+ListenStream=0.0.0.0:22522
 SSHEOF
 systemctl daemon-reload
 systemctl restart ssh.socket
@@ -210,7 +210,7 @@ output  "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
     {{- range $_, $node := $nodepool.Nodes }}
         {{- $instanceResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
         {{- $eipResourceName := printf "%s_%s_eip" $node.Name $resourceSuffix }}
-        "${aws_instance.{{ $instanceResourceName }}.tags_all.Name}" = [aws_eip.{{ $eipResourceName }}.public_ip, "{{ $nodepool.SshPort }}"]
+        "${aws_instance.{{ $instanceResourceName }}.tags_all.Name}" = [aws_eip.{{ $eipResourceName }}.public_ip, "22522"]
     {{- end }}
   }
 }

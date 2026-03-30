@@ -79,6 +79,18 @@ resource "azurerm_network_security_group" "{{ $networkSecurityGroupResourceName 
   resource_group_name = azurerm_resource_group.{{ $resourceGroupResourceName }}.name
 
   security_rule {
+    name                       = "SSH"
+    priority                   = 101
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22522"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
     name                       = "Wireguard"
     priority                   = 100
     direction                  = "Inbound"
@@ -90,23 +102,9 @@ resource "azurerm_network_security_group" "{{ $networkSecurityGroupResourceName 
     destination_address_prefix = "*"
   }
 
-{{- range $i, $port := $.Data.SshPorts }}
-  security_rule {
-    name                       = "SSH-{{ $port }}"
-    priority                   = {{ add 101 $i }}
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "{{ $port }}"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
-{{- end }}
-
   security_rule {
     name                       = "ICMP"
-    priority                   = 200
+    priority                   = 102
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Icmp"
@@ -136,7 +134,7 @@ resource "azurerm_network_security_group" "{{ $networkSecurityGroupResourceName 
   {{- if $K8sHasAPIServer }}
   security_rule {
     name                       = "KubeApi"
-    priority                   = 201
+    priority                   = 103
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"

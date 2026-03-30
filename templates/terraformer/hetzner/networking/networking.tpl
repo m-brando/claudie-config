@@ -23,17 +23,15 @@ resource "hcloud_firewall" "{{ $firewallResourceName }}" {
     ]
   }
 
-{{- range $port := $.Data.SshPorts }}
   rule {
     direction  = "in"
     protocol   = "tcp"
-    port       = "{{ $port }}"
+    port       = "22522"
     source_ips = [
       "0.0.0.0/0",
       "::/0"
     ]
   }
-{{- end }}
 
   rule {
     direction  = "in"

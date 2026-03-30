@@ -93,17 +93,15 @@ resource "oci_core_default_security_list" "{{ $coreSecurityListResourceName }}" 
     description = "Allow all ICMP"
   }
 
-{{- range $port := $.Data.SshPorts }}
   ingress_security_rules {
     protocol    = "6"
     source      = "0.0.0.0/0"
     tcp_options {
-      min = "{{ $port }}"
-      max = "{{ $port }}"
+      min = "22522"
+      max = "22522"
     }
-    description = "Allow SSH connections on port {{ $port }}"
+    description = "Allow SSH connections"
   }
-{{- end }}
 
 {{- if $isKubernetesCluster }}
   {{- if $K8sHasAPIServer }}

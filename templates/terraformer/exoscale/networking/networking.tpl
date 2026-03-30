@@ -26,17 +26,15 @@ resource "exoscale_security_group_rule" "icmp_{{ $resourceSuffix }}" {
   cidr              = "0.0.0.0/0"
 }
 
-{{- range $port := $.Data.SshPorts }}
-resource "exoscale_security_group_rule" "ssh_{{ $port }}_{{ $resourceSuffix }}" {
+resource "exoscale_security_group_rule" "ssh_{{ $resourceSuffix }}" {
   provider          = exoscale.nodepool_{{ $resourceSuffix }}
   security_group_id = exoscale_security_group.{{ $sgResourceName }}.id
   type              = "INGRESS"
   protocol          = "TCP"
-  start_port        = {{ $port }}
-  end_port          = {{ $port }}
+  start_port        = 22522
+  end_port          = 22522
   cidr              = "0.0.0.0/0"
 }
-{{- end }}
 
 resource "exoscale_security_group_rule" "wireguard_{{ $resourceSuffix }}" {
   provider          = exoscale.nodepool_{{ $resourceSuffix }}

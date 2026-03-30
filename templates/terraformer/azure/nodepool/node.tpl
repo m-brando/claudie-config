@@ -102,12 +102,12 @@ sudo cat /root/.ssh/temp > /root/.ssh/authorized_keys
 sudo rm /root/.ssh/temp
 sudo echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
 # Configure SSH port
-echo "Port {{ $nodepool.Details.SshPort }}" >> /etc/ssh/sshd_config
+echo "Port 22522" >> /etc/ssh/sshd_config
 mkdir -p /etc/systemd/system/ssh.socket.d
 cat <<SSHEOF > /etc/systemd/system/ssh.socket.d/override.conf
 [Socket]
 ListenStream=
-ListenStream=0.0.0.0:{{ $nodepool.Details.SshPort }}
+ListenStream=0.0.0.0:22522
 SSHEOF
 systemctl daemon-reload
 systemctl restart ssh.socket
@@ -138,12 +138,12 @@ sudo cat /root/.ssh/temp > /root/.ssh/authorized_keys
 sudo rm /root/.ssh/temp
 sudo echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
 # Configure SSH port
-echo "Port {{ $nodepool.Details.SshPort }}" >> /etc/ssh/sshd_config
+echo "Port 22522" >> /etc/ssh/sshd_config
 mkdir -p /etc/systemd/system/ssh.socket.d
 cat <<SSHEOF > /etc/systemd/system/ssh.socket.d/override.conf
 [Socket]
 ListenStream=
-ListenStream=0.0.0.0:{{ $nodepool.Details.SshPort }}
+ListenStream=0.0.0.0:22522
 SSHEOF
 systemctl daemon-reload
 systemctl restart ssh.socket
@@ -224,7 +224,7 @@ output "{{ $nodepool.Name }}_{{ $nodepoolSpecName }}_{{ $uniqueFingerPrint }}" {
     {{- range $node := $nodepool.Nodes }}
         {{- $virtualMachineResourceName   := printf "%s_%s" $node.Name $resourceSuffix }}
         {{- $publicIPResourceName         := printf "%s_%s_public_ip" $node.Name $resourceSuffix }}
-        "${azurerm_linux_virtual_machine.{{ $virtualMachineResourceName }}.name}" = [azurerm_public_ip.{{ $publicIPResourceName }}.ip_address, "{{ $nodepool.SshPort }}"]
+        "${azurerm_linux_virtual_machine.{{ $virtualMachineResourceName }}.name}" = [azurerm_public_ip.{{ $publicIPResourceName }}.ip_address, "22522"]
     {{- end }}
   }
 }

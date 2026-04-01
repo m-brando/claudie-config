@@ -37,7 +37,7 @@
           server_type   = "{{ $nodepool.Details.ServerType }}"
           image         = "{{ $nodepool.Details.Image }}"
           firewall_ids  = [ hcloud_firewall.{{ $firewallResourceName }}.id ]
-          location      = "{{ $nodepool.Details.Region }}"
+          datacenter    = "{{ $nodepool.Details.Zone }}"
           public_net {
              ipv6_enabled = false
           }
@@ -49,19 +49,9 @@
             "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
           }
 
+        {{- if $isKubernetesCluster }}
           user_data = <<EOF
 #!/bin/bash
-# Configure SSH port
-echo "Port ${local.claudie_ssh_port_{{ $resourceSuffix }}}" >> /etc/ssh/sshd_config
-mkdir -p /etc/systemd/system/ssh.socket.d
-cat <<SSHEOF > /etc/systemd/system/ssh.socket.d/override.conf
-[Socket]
-ListenStream=
-ListenStream=0.0.0.0:${local.claudie_ssh_port_{{ $resourceSuffix }}}
-SSHEOF
-systemctl daemon-reload
-systemctl restart ssh.socket
-        {{- if $isKubernetesCluster }}
 # Create longhorn volume directory
 mkdir -p /opt/claudie/data
 
@@ -82,8 +72,9 @@ if ! grep -qs "/dev/$disk" /proc/mounts; then
 fi
 
             {{- end }}
-        {{- end }}
 EOF
+
+        {{- end }}
         }
 
         {{- if $isKubernetesCluster }}
@@ -116,7 +107,7 @@ output "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
   value = {
     {{- range $node := $nodepool.Nodes }}
         {{- $serverResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
-        "${hcloud_server.{{ $serverResourceName }}.name}" = [hcloud_server.{{ $serverResourceName }}.ipv4_address, tostring(local.claudie_ssh_port_{{ $resourceSuffix }})]
+        "${hcloud_server.{{ $serverResourceName }}.name}" = hcloud_server.{{ $serverResourceName }}.ipv4_address
     {{- end }}
   }
 }

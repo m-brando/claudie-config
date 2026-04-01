@@ -14,20 +14,11 @@ locals {
     "icmp"   = 1
     "icmpv6" = 58
   }
-  claudie_ssh_port_{{ $specName }}_{{ $uniqueFingerPrint }} = 22522
 }
 
 {{- range $_, $region := .Data.Regions }}
 
 {{- $resourceSuffix := printf "%s_%s_%s" $region $specName $uniqueFingerPrint }}
-
-# Fetch available availability domains for the region
-# Note: Availability domains must be queried using the tenancy OCID (root compartment),
-# not a sub-compartment OCID, as ADs are tenancy-level resources.
-data "oci_identity_availability_domains" "available_{{ $resourceSuffix }}" {
-  provider       = oci.nodepool_{{ $resourceSuffix }}
-  compartment_id = "{{ $.Data.Provider.GetOci.TenancyOCID }}"
-}
 
 {{- if $isKubernetesCluster }}
     {{- $varStorageDiskName  := printf "oci_storage_disk_name_%s" $resourceSuffix }}
@@ -98,8 +89,8 @@ resource "oci_core_default_security_list" "{{ $coreSecurityListResourceName }}" 
     protocol    = "6"
     source      = "0.0.0.0/0"
     tcp_options {
-      min = local.claudie_ssh_port_{{ $specName }}_{{ $uniqueFingerPrint }}
-      max = local.claudie_ssh_port_{{ $specName }}_{{ $uniqueFingerPrint }}
+      min = "22"
+      max = "22"
     }
     description = "Allow SSH connections"
   }

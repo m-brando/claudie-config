@@ -8,10 +8,6 @@
 {{- $K8sHasAPIServer       := .Data.K8sData.HasAPIServer }}
 {{- $resourceSuffix        := printf "%s_%s" $specName $uniqueFingerPrint }}
 
-locals {
-  claudie_ssh_port_{{ $resourceSuffix }} = 22522
-}
-
 {{- $firewallResourceName  := printf "firewall_%s" $resourceSuffix }}
 {{- $firewallName  := printf "fwl%s%s" $clusterHash $uniqueFingerPrint }}
 
@@ -30,7 +26,7 @@ resource "hcloud_firewall" "{{ $firewallResourceName }}" {
   rule {
     direction  = "in"
     protocol   = "tcp"
-    port       = tostring(local.claudie_ssh_port_{{ $resourceSuffix }})
+    port       = "22"
     source_ips = [
       "0.0.0.0/0",
       "::/0"

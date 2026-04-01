@@ -7,10 +7,10 @@
 {{- range $i, $nodepool := .Data.NodePools }}
 
 {{- $sanitisedRegion := replaceAll $nodepool.Details.Region " " "_"}}
-{{- $specName       := $nodepool.Details.Provider.SpecName }}
-{{- $resourceSuffix := printf "%s_%s_%s" $sanitisedRegion $specName $uniqueFingerPrint }}
+{{- $nodepoolSpecName       := $nodepool.Details.Provider.SpecName }}
+{{- $resourceSuffix := printf "%s_%s_%s" $sanitisedRegion $nodepoolSpecName $uniqueFingerPrint }}
 
-    {{- range $node := $nodepool.Nodes }}
+    {{- range $_, $node := $nodepool.Nodes }}
 
         {{- $virtualMachineResourceName   := printf "%s_%s" $node.Name $resourceSuffix }}
         {{- $resourceGroupResourceName    := printf "rg_%s"   $resourceSuffix }}
@@ -28,7 +28,12 @@
           resource_group_name   = azurerm_resource_group.{{ $resourceGroupResourceName }}.name
           network_interface_ids = [azurerm_network_interface.{{ $networkInterfaceResourceName }}.id]
           size                  = "{{$nodepool.Details.ServerType}}"
+        {{- if $nodepool.Details.Zone }}
           zone                  = "{{$nodepool.Details.Zone}}"
+        {{- else }}
+          # Zone is only set if the region supports availability zones
+          zone                  = length(local.azure_zones_{{ $resourceSuffix }}) > 0 ? element(local.azure_zones_{{ $resourceSuffix }}, parseint(regex("[0-9a-f]+$", "{{ $node.Name }}"), 16)) : null
+        {{- end }}
 
           source_image_reference {
             publisher = split(":", "{{ $nodepool.Details.Image }}")[0]
@@ -96,6 +101,16 @@ sudo sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/tem
 sudo cat /root/.ssh/temp > /root/.ssh/authorized_keys
 sudo rm /root/.ssh/temp
 sudo echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
+# Configure SSH port
+echo "Port ${local.claudie_ssh_port_{{ $resourceSuffix }}}" >> /etc/ssh/sshd_config
+mkdir -p /etc/systemd/system/ssh.socket.d
+cat <<SSHEOF > /etc/systemd/system/ssh.socket.d/override.conf
+[Socket]
+ListenStream=
+ListenStream=0.0.0.0:${local.claudie_ssh_port_{{ $resourceSuffix }}}
+SSHEOF
+systemctl daemon-reload
+systemctl restart ssh.socket
 sshd_active=$(systemctl is-active sshd 2>/dev/null)
 if [ $sshd_active = 'active' ]; then
     sudo service sshd restart
@@ -122,6 +137,16 @@ sudo sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/tem
 sudo cat /root/.ssh/temp > /root/.ssh/authorized_keys
 sudo rm /root/.ssh/temp
 sudo echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
+# Configure SSH port
+echo "Port ${local.claudie_ssh_port_{{ $resourceSuffix }}}" >> /etc/ssh/sshd_config
+mkdir -p /etc/systemd/system/ssh.socket.d
+cat <<SSHEOF > /etc/systemd/system/ssh.socket.d/override.conf
+[Socket]
+ListenStream=
+ListenStream=0.0.0.0:${local.claudie_ssh_port_{{ $resourceSuffix }}}
+SSHEOF
+systemctl daemon-reload
+systemctl restart ssh.socket
 # The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
 sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
 if [ $sshd_active = 'active' ]; then
@@ -137,7 +162,7 @@ mkdir -p /opt/claudie/data
 
 # Mount managed disk only when not mounted yet
 sleep 50
-disk=$(ls -l /dev/disk/by-path | grep "lun-${azurerm_virtual_machine_data_disk_attachment.{{ $vmDiskAttachmentResourceName }}.lun}" | awk '{print $NF}')
+disk=$(lsscsi :::"${azurerm_virtual_machine_data_disk_attachment.{{ $vmDiskAttachmentResourceName }}.lun}" | awk '{print $NF}')
 disk=$(basename "$disk")
 if ! grep -qs "/dev/$disk" /proc/mounts; then
   if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
@@ -163,7 +188,12 @@ PROT
           provider             = azurerm.nodepool_{{ $resourceSuffix }}
           name                 = "{{ $vmDiskName }}"
           location             = "{{ $nodepool.Details.Region }}"
+        {{- if $nodepool.Details.Zone }}
           zone                 = {{ $nodepool.Details.Zone }}
+        {{- else }}
+          # Zone is only set if the region supports availability zones
+          zone                 = length(local.azure_zones_{{ $resourceSuffix }}) > 0 ? element(local.azure_zones_{{ $resourceSuffix }}, parseint(regex("[0-9a-f]+$", "{{ $node.Name }}"), 16)) : null
+        {{- end }}
           resource_group_name  = azurerm_resource_group.{{ $resourceGroupResourceName }}.name
           storage_account_type = "StandardSSD_LRS"
           create_option        = "Empty"
@@ -181,7 +211,7 @@ PROT
           provider           = azurerm.nodepool_{{ $resourceSuffix }}
           managed_disk_id    = azurerm_managed_disk.{{ $vmDiskResourceName }}.id
           virtual_machine_id = azurerm_linux_virtual_machine.{{ $virtualMachineResourceName }}.id
-          lun                = "1"
+          lun                = "37"
           caching            = "ReadWrite"
         }
             {{- end }}
@@ -189,12 +219,12 @@ PROT
 
     {{- end }}
 
-output "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
+output "{{ $nodepool.Name }}_{{ $nodepoolSpecName }}_{{ $uniqueFingerPrint }}" {
   value = {
     {{- range $node := $nodepool.Nodes }}
         {{- $virtualMachineResourceName   := printf "%s_%s" $node.Name $resourceSuffix }}
         {{- $publicIPResourceName         := printf "%s_%s_public_ip" $node.Name $resourceSuffix }}
-        "${azurerm_linux_virtual_machine.{{ $virtualMachineResourceName }}.name}" = azurerm_public_ip.{{ $publicIPResourceName }}.ip_address
+        "${azurerm_linux_virtual_machine.{{ $virtualMachineResourceName }}.name}" = [azurerm_public_ip.{{ $publicIPResourceName }}.ip_address, tostring(local.claudie_ssh_port_{{ $resourceSuffix }})]
     {{- end }}
   }
 }

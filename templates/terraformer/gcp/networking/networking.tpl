@@ -11,6 +11,17 @@
 
 {{- $resourceSuffix := printf "%s_%s_%s" $region $specName $uniqueFingerPrint }}
 
+locals {
+  claudie_ssh_port_{{ $resourceSuffix }} = 22522
+}
+
+# Fetch available zones for this region
+data "google_compute_zones" "available_{{ $resourceSuffix }}" {
+  provider = google.nodepool_{{ $resourceSuffix }}
+  region   = "{{ $region }}"
+  status   = "UP"
+}
+
 {{- if $isKubernetesCluster }}
     {{- $varStorageDiskName  := printf "gcp_storage_disk_name_%s" $resourceSuffix }}
     variable "{{ $varStorageDiskName}}" {
@@ -64,7 +75,7 @@ resource "google_compute_firewall" "{{ $computeFirewallResourceName }}" {
 
   allow {
       protocol = "TCP"
-      ports    = ["22"]
+      ports    = [tostring(local.claudie_ssh_port_{{ $resourceSuffix }})]
   }
 
   allow {

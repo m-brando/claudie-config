@@ -10,7 +10,7 @@
 {{- $region         := $nodepool.Details.Region }}
 {{- $specName       := $nodepool.Details.Provider.SpecName }}
 {{- $resourceSuffix := printf "%s_%s_%s" $region $specName $uniqueFingerPrint }}
-
+{{- $internetGatewayResourceName := printf "claudie_gateway_%s" $resourceSuffix }}
 {{- $keypairResourceName  := printf "key_%s_%s" $nodepool.Name $resourceSuffix }}
 {{- $keypairName          := printf "key-%s-%s-%s" $nodepool.Name $clusterHash $specName }}
 
@@ -24,22 +24,50 @@ resource "aws_key_pair" "{{ $keypairResourceName }}" {
   }
 }
 
-    {{- range $node := $nodepool.Nodes }}
+    {{- range $_, $node := $nodepool.Nodes }}
 
         {{- $instanceResourceName         := printf "%s_%s" $node.Name $resourceSuffix }}
-        {{- $subnetResourceName           := printf "%s_%s_subnet" $nodepool.Name $resourceSuffix }}
+        {{- /* Subnet name depends on whether zone is specified */}}
+        {{- $subnetResourceName           := "" }}
+        {{- if $nodepool.Details.Zone }}
+            {{- $subnetResourceName = printf "%s_%s_subnet" $nodepool.Name $resourceSuffix }}
+        {{- else }}
+            {{- $subnetResourceName = printf "%s_%s_%s_subnet" $nodepool.Name $node.Name $resourceSuffix }}
+        {{- end }}
         {{- $securityGroupResourceName    := printf "claudie_sg_%s"   $resourceSuffix }}
         {{- $isWorkerNodeWithDiskAttached := and (not $nodepool.IsControl) (gt $nodepool.Details.StorageDiskSize 0) }}
         {{- $volumeResourceName           := printf "%s_%s_volume" $node.Name $resourceSuffix }}
         {{- $volumeAttachmentResourceName := printf "%s_%s_volume_att" $node.Name $resourceSuffix }}
+        {{- $eipResourceName              := printf "%s_%s_eip" $node.Name $resourceSuffix }}
+        {{- $eipAssocResourceName         := printf "%s_%s_eip_assoc" $node.Name $resourceSuffix }}
+
+        resource "aws_eip" "{{ $eipResourceName }}" {
+          provider   = aws.nodepool_{{ $resourceSuffix }}
+          depends_on = [aws_internet_gateway.{{ $internetGatewayResourceName }}]
+          domain     = "vpc"
+
+          tags = {
+            Name            = "{{ $node.Name }}-eip"
+            Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
+          }
+        }
+
+        resource "aws_eip_association" "{{ $eipAssocResourceName }}" {
+          provider      = aws.nodepool_{{ $resourceSuffix }}
+          instance_id   = aws_instance.{{ $instanceResourceName }}.id
+          allocation_id = aws_eip.{{ $eipResourceName }}.id
+        }
 
         resource "aws_instance" "{{ $instanceResourceName }}" {
           provider          = aws.nodepool_{{ $resourceSuffix }}
+        {{- if $nodepool.Details.Zone }}
           availability_zone = "{{ $nodepool.Details.Zone }}"
+        {{- else }}
+          availability_zone = element(data.aws_availability_zones.available_{{ $resourceSuffix }}.names, parseint(regex("[0-9a-f]+$", "{{ $node.Name }}"), 16))
+        {{- end }}
           instance_type     = "{{ $nodepool.Details.ServerType }}"
           ami               = "{{ $nodepool.Details.Image }}"
 
-          associate_public_ip_address = true
           key_name               = aws_key_pair.{{ $keypairResourceName }}.key_name
           subnet_id              = aws_subnet.{{ $subnetResourceName }}.id
           vpc_security_group_ids = [aws_security_group.{{ $securityGroupResourceName }}.id]
@@ -62,7 +90,28 @@ resource "aws_key_pair" "{{ $keypairResourceName }}" {
 sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
 cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
-echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
+# Configure SSH port
+echo "Port ${local.claudie_ssh_port_{{ $resourceSuffix }}}" >> /etc/ssh/sshd_config
+mkdir -p /etc/systemd/system/ssh.socket.d
+cat <<SSHEOF > /etc/systemd/system/ssh.socket.d/override.conf
+[Socket]
+ListenStream=
+ListenStream=0.0.0.0:${local.claudie_ssh_port_{{ $resourceSuffix }}}
+SSHEOF
+systemctl daemon-reload
+systemctl restart ssh.socket
+# The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
+sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
+ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
+
+if [ $sshd_active = 'active' ]; then
+    systemctl restart sshd
+fi
+
+if [ $ssh_active = 'active' ]; then
+    systemctl restart ssh
+fi
 EOF
 
         {{- end }}
@@ -80,7 +129,28 @@ set -euxo pipefail
 sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
 cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
-echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
+# Configure SSH port
+echo "Port ${local.claudie_ssh_port_{{ $resourceSuffix }}}" >> /etc/ssh/sshd_config
+mkdir -p /etc/systemd/system/ssh.socket.d
+cat <<SSHEOF > /etc/systemd/system/ssh.socket.d/override.conf
+[Socket]
+ListenStream=
+ListenStream=0.0.0.0:${local.claudie_ssh_port_{{ $resourceSuffix }}}
+SSHEOF
+systemctl daemon-reload
+systemctl restart ssh.socket
+# The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
+sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
+ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
+
+if [ $sshd_active = 'active' ]; then
+    systemctl restart sshd
+fi
+
+if [ $ssh_active = 'active' ]; then
+    systemctl restart ssh
+fi
 # Create longhorn volume directory
 mkdir -p /opt/claudie/data
 
@@ -104,13 +174,17 @@ fi
 
         {{- end }}
         }
-
+        
         {{- if $isKubernetesCluster }}
             {{- if $isWorkerNodeWithDiskAttached }}
 
         resource "aws_ebs_volume" "{{ $volumeResourceName }}" {
           provider          = aws.nodepool_{{ $resourceSuffix }}
+        {{- if $nodepool.Details.Zone }}
           availability_zone = "{{ $nodepool.Details.Zone }}"
+        {{- else }}
+          availability_zone = element(data.aws_availability_zones.available_{{ $resourceSuffix }}.names, parseint(regex("[0-9a-f]+$", "{{ $node.Name }}"), 16))
+        {{- end }}
           size              = {{ $nodepool.Details.StorageDiskSize }}
           type              = "gp2"
 
@@ -134,8 +208,9 @@ fi
 output  "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
   value = {
     {{- range $_, $node := $nodepool.Nodes }}
-        {{- $instanceResourceName         := printf "%s_%s" $node.Name $resourceSuffix }}
-        "${aws_instance.{{ $instanceResourceName }}.tags_all.Name}" =  aws_instance.{{ $instanceResourceName}}.public_ip
+        {{- $instanceResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
+        {{- $eipResourceName := printf "%s_%s_eip" $node.Name $resourceSuffix }}
+        "${aws_instance.{{ $instanceResourceName }}.tags_all.Name}" = [aws_eip.{{ $eipResourceName }}.public_ip, tostring(local.claudie_ssh_port_{{ $resourceSuffix }})]
     {{- end }}
   }
 }

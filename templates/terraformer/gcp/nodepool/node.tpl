@@ -11,7 +11,16 @@
 {{- $specName       := $nodepool.Details.Provider.SpecName }}
 {{- $resourceSuffix := printf "%s_%s_%s" $region $specName $uniqueFingerPrint }}
 
-    {{- range $node := $nodepool.Nodes }}
+    {{- range $_, $node := $nodepool.Nodes }}
+
+        {{- $computeExternalIpResourceName  := printf "%s_%s_external_ip" $node.Name $resourceSuffix }}
+        {{- $computeExternalIpName          := printf "i%s" $node.Name }}
+
+        resource "google_compute_address" "{{ $computeExternalIpResourceName }}" {
+          provider      = google.nodepool_{{ $resourceSuffix }}
+          name          = "{{ $computeExternalIpName }}"
+          description   = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
+        }
 
         {{- $computeInstanceResourceName  := printf "%s_%s" $node.Name $resourceSuffix }}
         {{- $computeSubnetResourceName    := printf "%s_%s_subnet" $nodepool.Name $resourceSuffix }}
@@ -20,15 +29,35 @@
 
         resource "google_compute_instance" "{{ $computeInstanceResourceName}}" {
           provider                  = google.nodepool_{{ $resourceSuffix }}
+        {{- if $nodepool.Details.Zone }}
           zone                      = "{{ $nodepool.Details.Zone }}"
+        {{- else }}
+          zone                      = element(data.google_compute_zones.available_{{ $resourceSuffix }}.names, parseint(regex("[0-9a-f]+$", "{{ $node.Name }}"), 16))
+        {{- end }}
           name                      = "{{ $node.Name }}"
           machine_type              = "{{ $nodepool.Details.ServerType }}"
           description   = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
           allow_stopping_for_update = true
 
+          {{- /* GPU Guest Accelerator Configuration */}}
+          {{- if and $nodepool.Details.MachineSpec $nodepool.Details.MachineSpec.NvidiaGpuCount }}
+          {{- if gt $nodepool.Details.MachineSpec.NvidiaGpuCount 0 }}
+          guest_accelerator {
+            type  = "{{ $nodepool.Details.MachineSpec.NvidiaGpuType }}"
+            count = {{ $nodepool.Details.MachineSpec.NvidiaGpuCount }}
+          }
+
+          scheduling {
+            on_host_maintenance = "TERMINATE"
+          }
+          {{- end }}
+          {{- end }}
+
           network_interface {
             subnetwork = google_compute_subnetwork.{{ $computeSubnetResourceName }}.self_link
-            access_config {}
+            access_config {
+              nat_ip = google_compute_address.{{ $computeExternalIpResourceName }}.address
+            }
           }
 
           metadata = {
@@ -47,7 +76,34 @@
                 image = "{{ $nodepool.Details.Image }}"
               }
             }
-            metadata_startup_script = "echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart"
+            metadata_startup_script = <<EOF
+#!/bin/bash
+set -euxo pipefail
+# Allow ssh as root
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
+# Configure SSH port
+echo "Port ${local.claudie_ssh_port_{{ $resourceSuffix }}}" >> /etc/ssh/sshd_config
+mkdir -p /etc/systemd/system/ssh.socket.d
+cat <<SSHEOF > /etc/systemd/system/ssh.socket.d/override.conf
+[Socket]
+ListenStream=
+ListenStream=0.0.0.0:${local.claudie_ssh_port_{{ $resourceSuffix }}}
+SSHEOF
+systemctl daemon-reload
+systemctl restart ssh.socket
+
+# The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
+sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
+ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
+
+if [ $sshd_active = 'active' ]; then
+    systemctl restart sshd
+fi
+
+if [ $ssh_active = 'active' ]; then
+    systemctl restart ssh
+fi
+EOF
         {{- end }}
 
         {{- if $isKubernetesCluster }}
@@ -62,7 +118,30 @@
 #!/bin/bash
 set -euxo pipefail
 # Allow ssh as root
-echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
+# Configure SSH port
+echo "Port ${local.claudie_ssh_port_{{ $resourceSuffix }}}" >> /etc/ssh/sshd_config
+mkdir -p /etc/systemd/system/ssh.socket.d
+cat <<SSHEOF > /etc/systemd/system/ssh.socket.d/override.conf
+[Socket]
+ListenStream=
+ListenStream=0.0.0.0:${local.claudie_ssh_port_{{ $resourceSuffix }}}
+SSHEOF
+systemctl daemon-reload
+systemctl restart ssh.socket
+
+# The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
+sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
+ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
+
+if [ $sshd_active = 'active' ]; then
+    systemctl restart sshd
+fi
+
+if [ $ssh_active = 'active' ]; then
+    systemctl restart ssh
+fi
+
 # Create longhorn volume directory
 mkdir -p /opt/claudie/data
 
@@ -106,7 +185,11 @@ EOF
               # suffix 'd' as otherwise the creation of the VM instance and attachment of the disk will fail, if having the same name as the node.
               name     = "{{ $computeDiskName }}"
               type     = "pd-ssd"
+            {{- if $nodepool.Details.Zone }}
               zone     = "{{ $nodepool.Details.Zone }}"
+            {{- else }}
+              zone     = element(data.google_compute_zones.available_{{ $resourceSuffix }}.names, parseint(regex("[0-9a-f]+$", "{{ $node.Name }}"), 16))
+            {{- end }}
               size     = {{ $nodepool.Details.StorageDiskSize }}
 
               labels = {
@@ -119,7 +202,11 @@ EOF
               provider    = google.nodepool_{{ $resourceSuffix }}
               disk        = google_compute_disk.{{ $computeDiskResourceName }}.id
               instance    = google_compute_instance.{{ $computeInstanceResourceName }}.id
+            {{- if $nodepool.Details.Zone }}
               zone        = "{{ $nodepool.Details.Zone }}"
+            {{- else }}
+              zone        = element(data.google_compute_zones.available_{{ $resourceSuffix }}.names, parseint(regex("[0-9a-f]+$", "{{ $node.Name }}"), 16))
+            {{- end }}
               device_name = var.{{ $varStorageDiskName }}
             }
             {{- end }}
@@ -131,7 +218,7 @@ EOF
       {{- range $node := $nodepool.Nodes }}
         {{- $computeInstanceResourceName  := printf "%s_%s" $node.Name $resourceSuffix }}
 
-        "${google_compute_instance.{{ $computeInstanceResourceName }}.name}" = google_compute_instance.{{ $computeInstanceResourceName }}.network_interface.0.access_config.0.nat_ip
+        "${google_compute_instance.{{ $computeInstanceResourceName }}.name}" = [google_compute_instance.{{ $computeInstanceResourceName }}.network_interface.0.access_config.0.nat_ip, tostring(local.claudie_ssh_port_{{ $resourceSuffix }})]
 
       {{- end }}
       }

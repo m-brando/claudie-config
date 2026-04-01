@@ -27,6 +27,19 @@ variable "{{ $basePriority }}" {
 {{- $sanitisedRegion := replaceAll $region " " "_"}}
 {{- $resourceSuffix := printf "%s_%s_%s" $sanitisedRegion $specName $uniqueFingerPrint }}
 
+# Fetch available zones for this region dynamically
+data "azurerm_location" "location_{{ $resourceSuffix }}" {
+  provider = azurerm.nodepool_{{ $resourceSuffix }}
+  location = "{{ $region }}"
+}
+
+locals {
+  # Extract logical zones from zone_mappings for uniform distribution when zone is not specified.
+  # Returns empty list if region doesn't support AZs - in that case, zone parameter will be omitted.
+  azure_zones_{{ $resourceSuffix }} = [for zm in data.azurerm_location.location_{{ $resourceSuffix }}.zone_mappings : zm.logical_zone]
+  # SSH port used by Claudie-managed VMs.
+  claudie_ssh_port_{{ $resourceSuffix }} = 22522
+}
 
 {{- $resourceGroupResourceName  := printf "rg_%s"     $resourceSuffix }}
 {{- $resourceGroupName          := printf "rg%s%s-%s" $clusterHash $uniqueFingerPrint $sanitisedRegion }}
@@ -74,7 +87,7 @@ resource "azurerm_network_security_group" "{{ $networkSecurityGroupResourceName 
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_range     = "22"
+    destination_port_range     = local.claudie_ssh_port_{{ $resourceSuffix }}
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }

@@ -11,7 +11,7 @@
 {{- $specName       := $nodepool.Details.Provider.SpecName }}
 {{- $resourceSuffix := printf "%s_%s_%s" $region $specName $uniqueFingerPrint }}
 
-    {{- range $node := $nodepool.Nodes }}
+    {{- range $_, $node := $nodepool.Nodes }}
 
         {{- $coreInstanceResourceName     := printf "%s_%s" $node.Name $resourceSuffix }}
         {{- $coreSubnetResourceName       := printf "%s_%s_subnet" $nodepool.Name $resourceSuffix }}
@@ -22,7 +22,11 @@
         resource "oci_core_instance" "{{ $coreInstanceResourceName }}" {
           provider            = oci.nodepool_{{ $resourceSuffix }}
           compartment_id      = var.{{ $varCompartmentID }}
+        {{- if $nodepool.Details.Zone }}
           availability_domain = "{{ $nodepool.Details.Zone }}"
+        {{- else }}
+          availability_domain = element(data.oci_identity_availability_domains.available_{{ $resourceSuffix }}.availability_domains, parseint(regex("[0-9a-f]+$", "{{ $node.Name }}"), 16)).name
+        {{- end }}
           shape               = "{{ $nodepool.Details.ServerType }}"
           display_name        = "{{ $node.Name }}"
 
@@ -59,7 +63,18 @@
                 - sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
                 - cat /root/.ssh/temp > /root/.ssh/authorized_keys
                 - rm /root/.ssh/temp
-                - echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
+                - echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
+                # Configure SSH port
+                - echo "Port ${local.claudie_ssh_port_{{ $specName }}_{{ $uniqueFingerPrint }}}" >> /etc/ssh/sshd_config
+                - mkdir -p /etc/systemd/system/ssh.socket.d
+                - |
+                  cat <<SSHEOF > /etc/systemd/system/ssh.socket.d/override.conf
+                  [Socket]
+                  ListenStream=
+                  ListenStream=0.0.0.0:${local.claudie_ssh_port_{{ $specName }}_{{ $uniqueFingerPrint }}}
+                  SSHEOF
+                - systemctl daemon-reload
+                - systemctl restart ssh.socket
                 # Disable iptables
                 # Accept all traffic to avoid ssh lockdown via iptables firewall rules
                 - iptables -P INPUT ACCEPT
@@ -71,6 +86,17 @@
                 - iptables -Z
                 # Make changes persistent
                 - netfilter-persistent save
+                - |
+                  # The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
+                  sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
+                  ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
+
+                  if [ $sshd_active = 'active' ]; then
+                      systemctl restart sshd
+                  fi
+                  if [ $ssh_active = 'active' ]; then
+                      systemctl restart ssh
+                  fi
               EOF
               )
           }
@@ -92,7 +118,29 @@
                 - sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
                 - cat /root/.ssh/temp > /root/.ssh/authorized_keys
                 - rm /root/.ssh/temp
-                - echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
+                - echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config
+                # Configure SSH port
+                - echo "Port ${local.claudie_ssh_port_{{ $specName }}_{{ $uniqueFingerPrint }}}" >> /etc/ssh/sshd_config
+                - mkdir -p /etc/systemd/system/ssh.socket.d
+                - |
+                  cat <<SSHEOF > /etc/systemd/system/ssh.socket.d/override.conf
+                  [Socket]
+                  ListenStream=
+                  ListenStream=0.0.0.0:${local.claudie_ssh_port_{{ $specName }}_{{ $uniqueFingerPrint }}}
+                  SSHEOF
+                - systemctl daemon-reload
+                - systemctl restart ssh.socket
+                - |
+                  # The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
+                  sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
+                  ssh_active=$(systemctl is-active ssh 2>/dev/null || true)
+
+                  if [ $sshd_active = 'active' ]; then
+                      systemctl restart sshd
+                  fi
+                  if [ $ssh_active = 'active' ]; then
+                      systemctl restart ssh
+                  fi
                 # Disable iptables
                 # Accept all traffic to avoid ssh lockdown via iptables firewall rules
                 - iptables -P INPUT ACCEPT
@@ -139,7 +187,11 @@
             resource "oci_core_volume" "{{ $coreVolumeResourceName }}" {
               provider            = oci.nodepool_{{ $resourceSuffix }}
               compartment_id      = var.{{ $varCompartmentID }}
+            {{- if $nodepool.Details.Zone }}
               availability_domain = "{{ $nodepool.Details.Zone }}"
+            {{- else }}
+              availability_domain = element(data.oci_identity_availability_domains.available_{{ $resourceSuffix }}.availability_domains, parseint(regex("[0-9a-f]+$", "{{ $node.Name }}"), 16)).name
+            {{- end }}
               size_in_gbs         = "{{ $nodepool.Details.StorageDiskSize }}"
               display_name        = "{{ $coreVolumeName }}"
               vpus_per_gb         = 10
@@ -168,7 +220,7 @@ output "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
   value = {
   {{- range $node := $nodepool.Nodes }}
         {{- $coreInstanceResourceName     := printf "%s_%s" $node.Name $resourceSuffix }}
-        "${oci_core_instance.{{ $coreInstanceResourceName }}.display_name}" = oci_core_instance.{{ $coreInstanceResourceName }}.public_ip
+        "${oci_core_instance.{{ $coreInstanceResourceName }}.display_name}" = [oci_core_instance.{{ $coreInstanceResourceName }}.public_ip, tostring(local.claudie_ssh_port_{{ $specName }}_{{ $uniqueFingerPrint }})]
   {{- end }}
   }
 }
